@@ -1,16 +1,26 @@
-from fastapi import APIRouter, Depends
-from ..schemas import ObservationCreate
-from ..auth import verify_token
+from fastapi import APIRouter, Depends, HTTPException
+from ..utils import get_current_user
+from ..schemas import ObservationUpload, ObservationResponse, OptimizeRequest, OptimizeResponse, OptimizedTrip
+from datetime import date, time
 
 router = APIRouter()
 
-@router.post("/observations/upload")
-def upload_observation(obs: ObservationCreate, token: dict = Depends(verify_token)):
+# 3. Upload passenger density and bus data
+@router.post("/observations/upload", response_model=ObservationResponse)
+def upload_observation(data: ObservationUpload, current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "uploader":
+        raise HTTPException(status_code=403, detail="uploader only")
+    
     return {"status": "success", "message": "Observation uploaded"}
 
-@router.post("/schedules/optimize")
-def optimize_schedule(route_id: int, date: str, token: dict = Depends(verify_token)):
-    optimized_trips = [
-        {"trip_id": 223, "start_time": "07:00", "end_time": "07:45", "bus_count": 3}
-    ]
-    return {"route_id": route_id, "date": date, "optimized_trips": optimized_trips}
+# 4. Trigger automated schedule plan
+@router.post("/schedules/optimize", response_model=OptimizeResponse)
+def optimize_schedule(request: OptimizeRequest, current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "uploader":
+        raise HTTPException(status_code=403, detail="uploader only")
+    
+    return OptimizeResponse(
+        route_id=request.route_id,
+        date=request.date,
+        optimized_trips=[OptimizedTrip(trip_id=223, start_time=time(7,0), end_time=time(7,45), bus_count=3)]
+    )

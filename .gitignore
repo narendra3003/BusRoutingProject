@@ -1,0 +1,28 @@
+# Node modules
+SmartBusScheduler/frontend/node_modules/
+SmartBusScheduler/backend/__pycache__/
+SmartBusScheduler/backend/app/__pycache__/
+SmartBusScheduler/backend/app/routers/__pycache__/
+
+# Build output
+SmartBusScheduler/frontend/build/
+SmartBusScheduler/frontend/.next/
+SmartBusScheduler/frontend/dist/
+
+# Python virtual environments
+venv/
+env/
+*.env
+*.txt
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# IDE files
+.vscode/
+.idea/

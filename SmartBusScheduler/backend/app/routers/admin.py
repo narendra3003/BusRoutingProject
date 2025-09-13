@@ -1,32 +1,37 @@
-from fastapi import APIRouter, Depends
-from ..schemas import TripSchema, OverrideSchema
-from ..auth import verify_token
+from fastapi import APIRouter, Depends, HTTPException
+from ..schemas import OverrideRequest, OverrideResponse, AdminScheduleResponse, AdminTrip, KPIResponse
+from datetime import date, time
+from ..utils import get_current_user
 
 router = APIRouter()
 
-# Mock trips
-trips_data = [
-    {"id": 201, "route_id": 12, "start_time": "06:00", "end_time": "06:40"},
-    {"id": 202, "route_id": 12, "start_time": "07:00", "end_time": "07:45"},
-]
+# 5. Schedule overrides
+@router.post("/schedules/override", response_model=OverrideResponse)
+def apply_override(request: OverrideRequest, current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+    
+    return {"status": "success", "message": "Override applied"}
 
-@router.get("/schedules")
-def view_schedules(route_id: int, date: str, token: dict = Depends(verify_token)):
-    return {
-        "route_id": route_id,
-        "date": date,
-        "trips": trips_data
-    }
+# 6. Admin view past/future trips
+@router.get("/schedules", response_model=AdminScheduleResponse)
+def view_schedules(route_id: int, date: date, current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+    
+    return AdminScheduleResponse(
+        route_id=route_id,
+        date=date,
+        trips=[
+            AdminTrip(trip_id=201, start_time=time(6,0), end_time=time(6,40)),
+            AdminTrip(trip_id=202, start_time=time(7,0), end_time=time(7,45)),
+        ]
+    )
 
-@router.get("/kpis")
-def kpis(date: str, token: dict = Depends(verify_token)):
-    return {
-        "date": date,
-        "avg_wait_time": 5.3,
-        "buses_used": 12,
-        "load_factor": 0.82
-    }
-
-@router.post("/schedules/override")
-def override_schedule(override: OverrideSchema, token: dict = Depends(verify_token)):
-    return {"status": "success", "message": f"Override applied to trip {override.trip_id}"}
+# 7. KPI calculations
+@router.get("/kpis", response_model=KPIResponse)
+def get_kpis(date: date, current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+    
+    return KPIResponse(date=date, avg_wait_time=5.3, buses_used=12, load_factor=0.82)

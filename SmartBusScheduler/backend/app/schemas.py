@@ -1,34 +1,160 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
+from datetime import date, time, datetime
 
-class StopSchema(BaseModel):
-    id: int
+# Request for signup
+class SignUpRequest(BaseModel):
     name: str
-    lat: float
-    lon: float
+    email: EmailStr
+    password: str
+    role: str  # customer/admin/driver/uploader
 
-    class Config:
-        orm_mode = True
+# Response after signup/login
+class AuthResponse(BaseModel):
+    status: str = "success"
+    message: str = "success"
+    access_token: str = None
+    token_type: str = "bearer"
 
-class TripSchema(BaseModel):
-    id: int
-    route_id: int
-    start_time: str
-    end_time: str
+# Request for login
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
-    class Config:
-        orm_mode = True
 
-class ObservationCreate(BaseModel):
+# ----------------------
+# Shared Base Schemas
+# ----------------------
+
+class StopBase(BaseModel):
+    stop_id: int
+    stop_name: str
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+
+
+class TripBase(BaseModel):
+    trip_id: int
+    route_id: Optional[int] = None
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
+
+
+class StopTimeBase(BaseModel):
+    trip_id: int
+    stop_id: int
+    stop_name: str
+    arrival_time: time
+    departure_time: time
+
+
+class ObservationUpload(BaseModel):
     bus_no: str
     route_id: int
     stop_id: int
     boarding_count: int
     alighting_count: int
-    timestamp: str
+    timestamp: datetime
 
-class OverrideSchema(BaseModel):
+
+class OverrideRequest(BaseModel):
     trip_id: int
     delta_minutes: int
-    date: str
-    reason: Optional[str] = None
+    date: date
+    reason: str
+
+
+# ----------------------
+# Customer Schemas
+# ----------------------
+
+class ScheduleResponse(BaseModel):
+    route_id: int
+    date: date
+    previous_trips: List[StopTimeBase]
+    next_trips: List[StopTimeBase]
+
+
+class RouteStopsResponse(BaseModel):
+    route_id: int
+    stops: List[StopBase]
+
+
+# ----------------------
+# Uploader Schemas
+# ----------------------
+
+class ObservationResponse(BaseModel):
+    status: str
+    message: str
+
+
+class OptimizeRequest(BaseModel):
+    route_id: int
+    date: date
+
+
+class OptimizedTrip(BaseModel):
+    trip_id: int
+    start_time: time
+    end_time: time
+    bus_count: int
+
+
+class OptimizeResponse(BaseModel):
+    route_id: int
+    date: date
+    optimized_trips: List[OptimizedTrip]
+
+
+# ----------------------
+# Admin Schemas
+# ----------------------
+
+class OverrideResponse(BaseModel):
+    status: str
+    message: str
+
+
+class AdminTrip(BaseModel):
+    trip_id: int
+    start_time: time
+    end_time: time
+
+
+class AdminScheduleResponse(BaseModel):
+    route_id: int
+    date: date
+    trips: List[AdminTrip]
+
+
+class KPIResponse(BaseModel):
+    date: date
+    avg_wait_time: float
+    buses_used: int
+    load_factor: float
+
+
+# ----------------------
+# Driver Schemas
+# ----------------------
+
+class DriverTrip(BaseModel):
+    trip_id: int
+    report_time: time
+    route_id: int
+
+
+class DriverTripsResponse(BaseModel):
+    driver_id: int
+    date: date
+    assigned_trips: List[DriverTrip]
+
+
+# ----------------------
+# Map Schemas
+# ----------------------
+
+class RouteMapResponse(BaseModel):
+    route_id: int
+    stops: List[StopBase]
