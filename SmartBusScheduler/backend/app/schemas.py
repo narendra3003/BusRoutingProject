@@ -2,24 +2,32 @@ from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import date, time, datetime
 
-# Request for signup
+# schemas.py (add these)
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+
 class SignUpRequest(BaseModel):
     name: str
     email: EmailStr
     password: str
-    role: str  # customer/admin/driver/uploader
+    role: str  # 'customer' | 'driver' | 'admin'
 
-# Response after signup/login
-class AuthResponse(BaseModel):
-    status: str = "success"
-    message: str = "success"
-    access_token: str = None
-    token_type: str = "bearer"
-
-# Request for login
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+class AuthResponse(BaseModel):
+    status: str
+    message: str
+    user_id: Optional[int] = None
+    username: Optional[str] = None
+    role: Optional[str] = None
+
+class UserInfoResponse(BaseModel):
+    user_id: int
+    username: Optional[str] = None
+    role: str
+
 
 
 # ----------------------

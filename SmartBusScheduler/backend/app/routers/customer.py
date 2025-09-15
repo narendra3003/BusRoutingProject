@@ -2,16 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from ..schemas import ScheduleResponse, RouteStopsResponse, StopBase
 from datetime import date, time
-from ..utils import get_current_user
+from ..utils.dependencies import get_current_user_from_token, role_allowed
 
 router = APIRouter()
 
 # 1. Get schedules for route or stop (today)
 @router.get("/schedules/{route_id}", response_model=ScheduleResponse)
-def get_schedule(route_id: int, stop_id: int, current_user: dict = Depends(get_current_user)):
-    # current_user = {"user_id": 1, "role": "customer"}
-    if current_user["role"] != "customer":
-        raise HTTPException(status_code=403, detail="Access denied")
+def get_schedule(route_id: int, stop_id: int, _: None = Depends(role_allowed("customer"))):
     return ScheduleResponse(
         route_id=route_id,
         date=date.today(),
