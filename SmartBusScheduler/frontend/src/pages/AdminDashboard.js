@@ -1,77 +1,160 @@
-import React, { useEffect, useState } from "react";
-import API from "../api/api";
+import React, { useState } from "react";
+import Calendar from "react-calendar"; // install with: npm install react-calendar
+import "react-calendar/dist/Calendar.css";
 
 function AdminDashboard() {
-  const [kpi, setKpi] = useState({});
-  const [trips, setTrips] = useState([]);
-  const [override, setOverride] = useState({ trip_id: "", delta_minutes: "", reason: "" });
-  const [upload, setUpload] = useState({ bus_no: "", route_id: "", stop_id: "", boarding_count: "", alighting_count: "" });
+  const [file, setFile] = useState(null);
+  const [schedule, setSchedule] = useState([]);
+  const [expandedBus, setExpandedBus] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  useEffect(() => {
-    API.get("/admin/kpis").then(res => setKpi(res.data)).catch(console.log);
-    API.get("/admin/schedules").then(res => setTrips(res.data.trips)).catch(console.log);
-  }, []);
-
-  const handleOverride = () => {
-    API.post("/schedules/override", override)
-      .then(() => alert("Override applied")).catch(console.log);
-  }
-
+  // Simulate dataset upload + schedule generation
   const handleUpload = () => {
-    API.post("/observations/upload", upload)
-      .then(() => alert("Observation uploaded")).catch(console.log);
-  }
+    if (!file) {
+      alert("Please upload a dataset first!");
+      return;
+    }
+    // TODO: call backend API with the file
+    // For now, dummy schedule
+    setSchedule([
+      {
+        busNumber: "101",
+        time: "09:00 AM",
+        busName: "CityLink",
+        routes: [
+          "Central Station (current)",
+          "Market Square",
+          "University",
+        ],
+      },
+      {
+        busNumber: "202",
+        time: "10:30 AM",
+        busName: "MetroExpress",
+        routes: [
+          "Airport",
+          "Tech Park (current)",
+          "City Center",
+        ],
+      },
+    ]);
+    alert("Dataset uploaded successfully. Schedule generated!");
+  };
+
+  const toggleBus = (busNumber) => {
+    setExpandedBus(expandedBus === busNumber ? null : busNumber);
+  };
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-2">Admin Dashboard</h2>
-
-      {/* KPI Section */}
-      <div className="mb-4 p-2 border rounded">
-        <h3 className="font-bold">KPIs</h3>
-        <p>Buses Used: {kpi.buses_used}</p>
-        <p>Avg Wait Time: {kpi.avg_wait_time}</p>
-        <p>Load Factor: {kpi.load_factor}</p>
+    <div className="p-6 space-y-8">
+      {/* Dataset Uploader */}
+      <div className="bg-white p-4 shadow rounded">
+        <h2 className="text-xl font-bold mb-3">Upload Dataset</h2>
+        <input
+          type="file"
+          accept=".csv,.xlsx"
+          onChange={(e) => setFile(e.target.files[0])}
+          className="mb-3"
+        />
+        <button
+          onClick={handleUpload}
+          className="bg-purple-600 text-white px-4 py-2 rounded"
+        >
+          Upload & Generate Schedule
+        </button>
       </div>
 
-      {/* Trips Table */}
-      <div className="mb-4">
-        <h3 className="font-bold">Trips</h3>
-        <table className="border w-full">
-          <thead>
-            <tr>
-              <th>Trip ID</th><th>Start</th><th>End</th>
-            </tr>
-          </thead>
-          <tbody>
-            {trips.map(t => (
-              <tr key={t.trip_id}>
-                <td>{t.trip_id}</td><td>{t.start_time}</td><td>{t.end_time}</td>
+      {/* Schedule Viewer */}
+      {schedule.length > 0 && (
+        <div className="bg-white p-4 shadow rounded">
+          <h2 className="text-xl font-bold mb-3">Generated Schedule</h2>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-purple-100 text-left">
+                <th className="p-2 border">Bus Number</th>
+                <th className="p-2 border">Time</th>
+                <th className="p-2 border">Bus Name</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {schedule.map((bus) => (
+                <React.Fragment key={bus.busNumber}>
+                  <tr
+                    className="cursor-pointer hover:bg-purple-50"
+                    onClick={() => toggleBus(bus.busNumber)}
+                  >
+                    <td className="p-2 border">{bus.busNumber}</td>
+                    <td className="p-2 border">{bus.time}</td>
+                    <td className="p-2 border text-purple-700 font-semibold">
+                      {bus.busName}
+                    </td>
+                  </tr>
+                  {expandedBus === bus.busNumber && (
+                    <tr>
+                      <td colSpan="3" className="p-3 border bg-gray-50">
+                        <ul className="list-disc pl-6 space-y-1">
+                          {bus.routes.map((route, idx) => (
+                            <li key={idx}>{route}</li>
+                          ))}
+                        </ul>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {/* Override Form */}
-      <div className="mb-4 p-2 border rounded">
-        <h3 className="font-bold">Apply Override</h3>
-        <input placeholder="Trip ID" onChange={e => setOverride({...override, trip_id: e.target.value})} className="border p-1 m-1"/>
-        <input placeholder="Delta Minutes" onChange={e => setOverride({...override, delta_minutes: e.target.value})} className="border p-1 m-1"/>
-        <input placeholder="Reason" onChange={e => setOverride({...override, reason: e.target.value})} className="border p-1 m-1"/>
-        <button onClick={handleOverride} className="bg-purple-500 text-white px-2 py-1 rounded">Submit</button>
-      </div>
+      {/* Calendar Section */}
+      {schedule.length > 0 && (
+        <div className="bg-white p-4 shadow rounded flex flex-col items-center">
+          <h2 className="text-xl font-bold mb-3">Check Schedule by Date</h2>
+          <Calendar
+            onChange={setSelectedDate}
+            value={selectedDate}
+            className="mb-4"
+          />
+          <p className="text-gray-600">
+            Showing schedule for:{" "}
+            <span className="font-semibold">
+              {selectedDate.toDateString()}
+            </span>
+          </p>
+        </div>
+      )}
 
-      {/* Upload Form */}
-      <div className="p-2 border rounded">
-        <h3 className="font-bold">Upload Observation</h3>
-        <input placeholder="Bus No" onChange={e => setUpload({...upload, bus_no: e.target.value})} className="border p-1 m-1"/>
-        <input placeholder="Route ID" onChange={e => setUpload({...upload, route_id: e.target.value})} className="border p-1 m-1"/>
-        <input placeholder="Stop ID" onChange={e => setUpload({...upload, stop_id: e.target.value})} className="border p-1 m-1"/>
-        <input placeholder="Boarding Count" onChange={e => setUpload({...upload, boarding_count: e.target.value})} className="border p-1 m-1"/>
-        <input placeholder="Alighting Count" onChange={e => setUpload({...upload, alighting_count: e.target.value})} className="border p-1 m-1"/>
-        <button onClick={handleUpload} className="bg-purple-500 text-white px-2 py-1 rounded">Upload</button>
-      </div>
+      {/* Driver Allotment */}
+      {schedule.length > 0 && (
+        <div className="bg-white p-4 shadow rounded">
+          <h2 className="text-xl font-bold mb-3">Driver Allotment</h2>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-purple-100 text-left">
+                <th className="p-2 border">Driver Name</th>
+                <th className="p-2 border">Bus Number</th>
+                <th className="p-2 border">Shift Time</th>
+                <th className="p-2 border">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="p-2 border">John Doe</td>
+                <td className="p-2 border">101</td>
+                <td className="p-2 border">09:00 AM - 01:00 PM</td>
+                <td className="p-2 border">Assigned</td>
+              </tr>
+              <tr>
+                <td className="p-2 border">Alice Smith</td>
+                <td className="p-2 border">202</td>
+                <td className="p-2 border">10:30 AM - 02:30 PM</td>
+                <td className="p-2 border">Assigned</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
