@@ -1,4 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, Date, Time, Text, ForeignKey, CheckConstraint, ARRAY, DECIMAL, TIMESTAMP
+# models.py
+from sqlalchemy import (
+    Column, Integer, String, Float, Date, Time, Text, ForeignKey,
+    ARRAY, DECIMAL, TIMESTAMP
+)
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -14,7 +18,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
 
-    # relations
+    # relationships
     services_as_driver = relationship("Service", back_populates="driver", foreign_keys="Service.driver_id")
     services_as_conductor = relationship("Service", back_populates="conductor", foreign_keys="Service.conductor_id")
 
@@ -26,10 +30,10 @@ class Stop(Base):
     __tablename__ = "stops"
 
     stop_id = Column(Integer, primary_key=True, index=True)
-    stop_code = Column(String, unique=True)
+    stop_code = Column(String, unique=True, nullable=True)
     stop_name = Column(String, nullable=False)
-    stop_lat = Column(DECIMAL(9, 6))
-    stop_lon = Column(DECIMAL(9, 6))
+    stop_lat = Column(DECIMAL(9, 6), nullable=True)
+    stop_lon = Column(DECIMAL(9, 6), nullable=True)
 
     stop_times = relationship("StopTime", back_populates="stop")
     observations = relationship("ObservationData", back_populates="stop")
@@ -42,9 +46,10 @@ class Route(Base):
     __tablename__ = "routes"
 
     route_id = Column(Integer, primary_key=True, index=True)
-    route_short_name = Column(String)
-    route_long_name = Column(String)
-    stops = Column(ARRAY(Integer))  # Array of stop_ids
+    route_short_name = Column(String, nullable=True)
+    route_long_name = Column(String, nullable=True)
+    # simple storage of stop order as integer array of stop_ids (Postgres) - nullable for sqlite
+    stops = Column(ARRAY(Integer), nullable=True)
 
     trips = relationship("Trip", back_populates="route")
     observations = relationship("ObservationData", back_populates="route")
@@ -59,7 +64,7 @@ class Service(Base):
     service_id = Column(Integer, primary_key=True, index=True)
     driver_id = Column(Integer, ForeignKey("users.user_id"))
     conductor_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
-    notes = Column(Text)
+    notes = Column(Text, nullable=True)
 
     driver = relationship("User", back_populates="services_as_driver", foreign_keys=[driver_id])
     conductor = relationship("User", back_populates="services_as_conductor", foreign_keys=[conductor_id])
@@ -73,14 +78,14 @@ class Trip(Base):
     __tablename__ = "trips"
 
     trip_id = Column(Integer, primary_key=True, index=True)
-    route_id = Column(Integer, ForeignKey("routes.route_id"))
-    service_id = Column(Integer, ForeignKey("service.service_id"))
+    route_id = Column(Integer, ForeignKey("routes.route_id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("service.service_id"), nullable=True)
     date = Column(Date, nullable=False)
 
     route = relationship("Route", back_populates="trips")
     service = relationship("Service", back_populates="trips")
-    stop_times = relationship("StopTime", back_populates="trip")
-    overrides = relationship("AdminOverride", back_populates="trip")
+    stop_times = relationship("StopTime", back_populates="trip", cascade="all, delete-orphan")
+    overrides = relationship("AdminOverride", back_populates="trip", cascade="all, delete-orphan")
 
 
 # -----------------
@@ -90,10 +95,10 @@ class StopTime(Base):
     __tablename__ = "stop_times"
 
     id = Column(Integer, primary_key=True, index=True)
-    trip_id = Column(Integer, ForeignKey("trips.trip_id"))
-    stop_id = Column(Integer, ForeignKey("stops.stop_id"))
-    arrival_time = Column(Time)
-    departure_time = Column(Time)
+    trip_id = Column(Integer, ForeignKey("trips.trip_id"), nullable=False)
+    stop_id = Column(Integer, ForeignKey("stops.stop_id"), nullable=False)
+    arrival_time = Column(Time, nullable=True)
+    departure_time = Column(Time, nullable=True)
     boarding_in = Column(Integer, default=0)
     boarding_out = Column(Integer, default=0)
 
@@ -108,10 +113,10 @@ class AdminOverride(Base):
     __tablename__ = "admin_overrides"
 
     id = Column(Integer, primary_key=True, index=True)
-    trip_id = Column(Integer, ForeignKey("trips.trip_id"))
-    delta_minutes = Column(Integer)
-    effective_date = Column(Date)
-    reason = Column(Text)
+    trip_id = Column(Integer, ForeignKey("trips.trip_id"), nullable=False)
+    delta_minutes = Column(Integer, nullable=False)
+    effective_date = Column(Date, nullable=False)
+    reason = Column(Text, nullable=True)
 
     trip = relationship("Trip", back_populates="overrides")
 
@@ -123,12 +128,12 @@ class ObservationData(Base):
     __tablename__ = "observation_data"
 
     id = Column(Integer, primary_key=True, index=True)
-    bus_no = Column(String)
-    route_id = Column(Integer, ForeignKey("routes.route_id"))
-    stop_id = Column(Integer, ForeignKey("stops.stop_id"))
-    boarding_count = Column(Integer)
-    alighting_count = Column(Integer)
-    timestamp = Column(TIMESTAMP)
+    bus_no = Column(String, nullable=True)
+    route_id = Column(Integer, ForeignKey("routes.route_id"), nullable=False)
+    stop_id = Column(Integer, ForeignKey("stops.stop_id"), nullable=False)
+    boarding_count = Column(Integer, nullable=False, default=0)
+    alighting_count = Column(Integer, nullable=False, default=0)
+    timestamp = Column(TIMESTAMP, nullable=False)
 
     route = relationship("Route", back_populates="observations")
     stop = relationship("Stop", back_populates="observations")
@@ -151,6 +156,6 @@ class CrewData(Base):
     __tablename__ = "crew_data"
 
     crew_id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    post = Column(String)  # Driver / Conductor
-    experience = Column(Integer)
+    name = Column(String, nullable=True)
+    post = Column(String, nullable=True)  # Driver / Conductor
+    experience = Column(Integer, nullable=True)

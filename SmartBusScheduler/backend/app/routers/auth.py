@@ -51,6 +51,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     # include role + user_id in token
     access_token = create_access_token(
-        data={"sub": str(user.user_id), "role": user.role}
+        data={"user_id": user.user_id, "role": user.role}
     )
     return {"access_token": access_token, "token_type": "bearer"}
