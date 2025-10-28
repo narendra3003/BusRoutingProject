@@ -1,8 +1,18 @@
 from fastapi import FastAPI
 from .routers import admin, customer, driver, uploader, auth
 from .database import Base, engine
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="SmartBus API", version="1.0")
+
+#allow frontend to talk to backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create tables at startup
 @app.on_event("startup")
