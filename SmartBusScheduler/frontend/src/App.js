@@ -6,6 +6,9 @@ import LoginForm from "./components/LoginForm";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
+import Signup from "./components/SignUp";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Unauthorized from "./pages/Unauthorized";
 
 function App() {
   return (
@@ -16,18 +19,25 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginForm />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/unauthorized" element={<Unauthorized/>} />
 
           <Route path="/customer" element={
+            <ProtectedRoute allowedRoles={["customer"]}>
               <CustomerDashboard />
+            </ProtectedRoute>
           }/>
 
           <Route path="/admin" element={
-            
+            <ProtectedRoute allowedRoles={["admin"]}>
               <AdminDashboard />
+            </ProtectedRoute>
           }/>
 
           <Route path="/driver" element={
+            <ProtectedRoute allowedRoles={["driver"]}>
               <DriverDashboard />
+            </ProtectedRoute>
           }/>
         </Routes>
       </div>

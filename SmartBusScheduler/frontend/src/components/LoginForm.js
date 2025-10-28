@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {jwtDecode} from "jwt-decode";
 import API from "../api/api";
+import { Link } from "react-router-dom";
 
 function LoginForm() {
   const [username, setUsername] = useState("");
@@ -40,6 +41,7 @@ function LoginForm() {
       <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} className="border p-2 m-2"/>
       <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="border p-2 m-2"/>
       <button onClick={handleLogin} className="bg-purple-500 text-white px-4 py-2 rounded">Login</button>
+      <p>Don't have an account? <Link to="/signup" className="text-blue-500">Sign up</Link></p>
       {error && <div className="text-red-500 mt-2">{error}</div>}
     </div>
   );
