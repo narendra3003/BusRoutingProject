@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {jwtDecode} from "jwt-decode";
 import API from "../api/api";
 
 function LoginForm() {
@@ -10,24 +11,28 @@ function LoginForm() {
 
   const handleLogin = async () => {
     try {
-      const res = await API.post("/auth/login", { username, password });
-      const { token, role, name } = res.data;
-      
-      // Save session
-      sessionStorage.setItem("token", token);
-      sessionStorage.setItem("role", role);
-      sessionStorage.setItem("name", name);
+      const formData = new URLSearchParams();
+      formData.append("username", username);
+      formData.append("password", password);
 
-      // Redirect based on role
-      if(role === "customer") navigate("/customer");
-      else if(role === "admin") navigate("/admin");
-      else if(role === "driver") navigate("/driver");
-      else setError("Invalid role assigned.");
+      const res = await API.post("/auth/login", formData);
+      const { access_token, token_type } = res.data;
+
+      // Save token
+      sessionStorage.setItem("token", access_token);
       
-    } catch(err) {
+      const decoded = jwtDecode(access_token);
+
+      const role = decoded.role;
+      if(role === "admin") navigate("/admin");
+      else if(role === "customer") navigate("/customer");
+      else if(role === "driver") navigate("driver");
+      else navigate("/"); // redirect after login
+
+    } catch (err) {
       setError("Invalid credentials");
     }
-  }
+  };
 
   return (
     <div className="flex flex-col items-center mt-20">
