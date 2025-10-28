@@ -27,7 +27,7 @@ function LoginForm() {
       const role = decoded.role;
       if(role === "admin") navigate("/admin");
       else if(role === "customer") navigate("/customer");
-      else if(role === "driver") navigate("driver");
+      else if(role === "driver") navigate("/driver");
       else navigate("/"); // redirect after login
 
     } catch (err) {
