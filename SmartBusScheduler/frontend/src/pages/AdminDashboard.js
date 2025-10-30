@@ -1,106 +1,177 @@
 import React, { useState } from "react";
-import Calendar from "react-calendar"; // install with: npm install react-calendar
+import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
 function AdminDashboard() {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState({
+    stops_data: null,
+    routes_data: null,
+    routes_timeplan: null,
+    buses_data: null,
+    drivers_data: null,
+    observations_data: null,
+  });
+  const [errors, setErrors] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [expandedBus, setExpandedBus] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [loading, setLoading] = useState(false);
 
-  // Simulate dataset upload + schedule generation
-  const handleUpload = () => {
-    if (!file) {
-      alert("Please upload a dataset first!");
-      return;
+  const REQUIRED_KEYS = Object.keys(files);
+
+  // ------------------------------
+  // File input handling
+  // ------------------------------
+  const handleFileChange = (key, file) => {
+    setFiles((prev) => ({ ...prev, [key]: file }));
+  };
+
+  // ------------------------------
+  // Validation
+  // ------------------------------
+  const validateFiles = () => {
+    const newErrors = [];
+
+    REQUIRED_KEYS.forEach((key) => {
+      const file = files[key];
+      if (!file) {
+        newErrors.push(`${key} not selected`);
+      } else if (!file.name.toLowerCase().endsWith(".csv")) {
+        newErrors.push(`${key} must be a .csv file`);
+      }
+    });
+
+    setErrors(newErrors);
+    if (newErrors.length > 0) {
+      alert("Please fix the errors before uploading!");
+      return false;
     }
-    // TODO: call backend API with the file
-    // For now, dummy schedule
-    setSchedule([
-      {
-        busNumber: "101",
-        time: "09:00 AM",
-        busName: "CityLink",
-        routes: [
-          "Central Station (current)",
-          "Market Square",
-          "University",
-        ],
-      },
-      {
-        busNumber: "202",
-        time: "10:30 AM",
-        busName: "MetroExpress",
-        routes: [
-          "Airport",
-          "Tech Park (current)",
-          "City Center",
-        ],
-      },
-    ]);
-    alert("Dataset uploaded successfully. Schedule generated!");
+    return true;
+  };
+
+  // ------------------------------
+  // Backend call
+  // ------------------------------
+  const handleUpload = async () => {
+    if (!validateFiles()) return;
+
+    setLoading(true);
+    setErrors([]);
+    setSchedule([]);
+
+    try {
+      const formData = new FormData();
+      formData.append("stops", files.stops_data);
+      formData.append("routes", files.routes_data);
+      formData.append("routes_timeplan", files.routes_timeplan);
+      formData.append("buses", files.buses_data);
+      formData.append("drivers", files.drivers_data);
+      formData.append("observations", files.observations_data);
+
+      // Optional GA params
+      formData.append("pop_size", 30);
+      formData.append("ngen", 40);
+
+      const res = await fetch("http://localhost:8000/admin/optimize", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Optimization failed");
+      }
+
+      const data = await res.json();
+
+      alert("✅ Optimization completed successfully!");
+      console.log("Server response:", data);
+
+      // Display preview schedule from backend
+      setSchedule(data.preview || []);
+    } catch (err) {
+      console.error(err);
+      alert(`❌ Upload failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleBus = (busNumber) => {
     setExpandedBus(expandedBus === busNumber ? null : busNumber);
   };
 
+  // ------------------------------
+  // UI rendering
+  // ------------------------------
   return (
     <div className="p-6 space-y-8">
       {/* Dataset Uploader */}
       <div className="bg-white p-4 shadow rounded">
-        <h2 className="text-xl font-bold mb-3">Upload Dataset</h2>
-        <input
-          type="file"
-          accept=".csv,.xlsx"
-          onChange={(e) => setFile(e.target.files[0])}
-          className="mb-3"
-        />
+        <h2 className="text-xl font-bold mb-3">Upload Required Dataset Files</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {REQUIRED_KEYS.map((key) => (
+            <div key={key} className="flex flex-col">
+              <label className="font-semibold mb-1 capitalize">
+                {key.replace("_", " ")}:
+              </label>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={(e) => handleFileChange(key, e.target.files[0])}
+              />
+              {files[key] && (
+                <span className="text-green-600 text-sm mt-1">
+                  ✅ {files[key].name}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {errors.length > 0 && (
+          <ul className="mt-4 text-red-600 text-sm list-disc list-inside">
+            {errors.map((err, idx) => (
+              <li key={idx}>{err}</li>
+            ))}
+          </ul>
+        )}
+
         <button
           onClick={handleUpload}
-          className="bg-purple-600 text-white px-4 py-2 rounded"
+          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
+          disabled={loading}
         >
-          Upload & Generate Schedule
+          {loading ? "Uploading & Optimizing..." : "Validate & Upload"}
         </button>
       </div>
 
       {/* Schedule Viewer */}
       {schedule.length > 0 && (
         <div className="bg-white p-4 shadow rounded">
-          <h2 className="text-xl font-bold mb-3">Generated Schedule</h2>
+          <h2 className="text-xl font-bold mb-3">Optimized Schedule Preview</h2>
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-purple-100 text-left">
-                <th className="p-2 border">Bus Number</th>
-                <th className="p-2 border">Time</th>
-                <th className="p-2 border">Bus Name</th>
+                <th className="p-2 border">Bus ID</th>
+                <th className="p-2 border">Trip ID</th>
+                <th className="p-2 border">Route ID</th>
+                <th className="p-2 border">Planned Start</th>
+                <th className="p-2 border">Planned End</th>
+                <th className="p-2 border">Driver ID</th>
               </tr>
             </thead>
             <tbody>
-              {schedule.map((bus) => (
-                <React.Fragment key={bus.busNumber}>
-                  <tr
-                    className="cursor-pointer hover:bg-purple-50"
-                    onClick={() => toggleBus(bus.busNumber)}
-                  >
-                    <td className="p-2 border">{bus.busNumber}</td>
-                    <td className="p-2 border">{bus.time}</td>
-                    <td className="p-2 border text-purple-700 font-semibold">
-                      {bus.busName}
-                    </td>
-                  </tr>
-                  {expandedBus === bus.busNumber && (
-                    <tr>
-                      <td colSpan="3" className="p-3 border bg-gray-50">
-                        <ul className="list-disc pl-6 space-y-1">
-                          {bus.routes.map((route, idx) => (
-                            <li key={idx}>{route}</li>
-                          ))}
-                        </ul>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
+              {schedule.map((row, idx) => (
+                <tr key={idx} className="hover:bg-purple-50">
+                  <td className="p-2 border">{row.bus_id}</td>
+                  <td className="p-2 border">{row.trip_id}</td>
+                  <td className="p-2 border">{row.route_id}</td>
+                  <td className="p-2 border">{row.planned_start}</td>
+                  <td className="p-2 border">{row.planned_end}</td>
+                  <td className="p-2 border">{row.assigned_driver_id}</td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -118,41 +189,8 @@ function AdminDashboard() {
           />
           <p className="text-gray-600">
             Showing schedule for:{" "}
-            <span className="font-semibold">
-              {selectedDate.toDateString()}
-            </span>
+            <span className="font-semibold">{selectedDate.toDateString()}</span>
           </p>
-        </div>
-      )}
-
-      {/* Driver Allotment */}
-      {schedule.length > 0 && (
-        <div className="bg-white p-4 shadow rounded">
-          <h2 className="text-xl font-bold mb-3">Driver Allotment</h2>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-purple-100 text-left">
-                <th className="p-2 border">Driver Name</th>
-                <th className="p-2 border">Bus Number</th>
-                <th className="p-2 border">Shift Time</th>
-                <th className="p-2 border">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="p-2 border">John Doe</td>
-                <td className="p-2 border">101</td>
-                <td className="p-2 border">09:00 AM - 01:00 PM</td>
-                <td className="p-2 border">Assigned</td>
-              </tr>
-              <tr>
-                <td className="p-2 border">Alice Smith</td>
-                <td className="p-2 border">202</td>
-                <td className="p-2 border">10:30 AM - 02:30 PM</td>
-                <td className="p-2 border">Assigned</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       )}
     </div>

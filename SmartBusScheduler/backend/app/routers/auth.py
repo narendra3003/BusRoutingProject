@@ -49,9 +49,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # include role + user_id in token
     access_token = create_access_token(
-        data={"user_id": user.user_id, "role": user.role}
+        data={
+            "user_id": user.user_id,
+            "role": user.role,
+            "name": user.name
+        }
     )
     return {
         "access_token": access_token,

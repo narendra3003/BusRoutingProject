@@ -22,9 +22,18 @@ function LoginForm() {
       // Save token
       sessionStorage.setItem("token", access_token);
       
-      const decoded = jwtDecode(access_token);
+      //LoginForm.js
 
+// Decode token
+      const decoded = jwtDecode(access_token);
       const role = decoded.role;
+      const name = decoded.name || username; // depends on your token structure
+
+      // ✅ Save user info for Navbar
+      sessionStorage.setItem("name", name);
+      sessionStorage.setItem("role", role);
+
+      
       if(role === "admin") navigate("/admin");
       else if(role === "customer") navigate("/customer");
       else if(role === "driver") navigate("/driver");

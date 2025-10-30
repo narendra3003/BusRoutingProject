@@ -1,23 +1,44 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+//Navbar.js
+
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function Navbar() {
   const navigate = useNavigate();
-  const name = sessionStorage.getItem("name");
-  const role = sessionStorage.getItem("role");
+  const location = useLocation();
+  const [name, setName] = useState(sessionStorage.getItem("name"));
+  const [role, setRole] = useState(sessionStorage.getItem("role"));
+
+  // Update navbar whenever route changes (handles login, logout, redirects)
+  useEffect(() => {
+    setName(sessionStorage.getItem("name"));
+    setRole(sessionStorage.getItem("role"));
+  }, [location.pathname]);
 
   const logout = () => {
     sessionStorage.clear();
-    navigate("/");
-  }
+    setName(null);
+    setRole(null);
+    navigate("/"); // or "/login" if that’s your login page
+  };
 
   return (
-    <nav className="bg-purple-700 text-white p-4 flex justify-between">
-      <div className="font-bold">SmartBus Scheduler</div>
+    <nav className="bg-purple-700 text-white p-4 flex justify-between items-center">
+      <div
+        onClick={() => navigate("/")}
+        className="font-bold text-lg cursor-pointer hover:text-gray-200"
+      >
+        SmartBus Scheduler
+      </div>
       {role && (
-        <div className="space-x-4">
-          <span>Hi, {name} ({role})</span>
-          <button onClick={logout} className="bg-red-500 px-2 py-1 rounded">Logout</button>
+        <div className="space-x-4 flex items-center">
+          <span className="font-medium">Welcome, {name}</span>
+          <button
+            onClick={logout}
+            className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded transition"
+          >
+            Logout
+          </button>
         </div>
       )}
     </nav>

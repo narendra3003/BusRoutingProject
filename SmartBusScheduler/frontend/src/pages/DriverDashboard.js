@@ -1,116 +1,100 @@
 // DriverDashboard.js
-import React, { useState } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
+import React, { useState, useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 
-// Fix leaflet’s default marker issue
-import L from "leaflet";
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-});
-
 function DriverDashboard() {
-  const [expanded, setExpanded] = useState(null);
+  const [schedule, setSchedule] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Dummy driver schedule data
-  const schedule = [
-    {
-      busNo: "101",
-      time: "08:00 AM",
-      busName: "City Express",
-      stops: [
-        { name: "Stop 1", coords: [28.6139, 77.209] },
-        { name: "Stop 2", coords: [28.62, 77.23] },
-        { name: "Stop 3", coords: [28.635, 77.25] },
-      ],
-    },
-    {
-      busNo: "202",
-      time: "09:30 AM",
-      busName: "Metro Link",
-      stops: [
-        { name: "Stop 1", coords: [28.7041, 77.1025] },
-        { name: "Stop 2", coords: [28.71, 77.13] },
-        { name: "Stop 3", coords: [28.72, 77.15] },
-      ],
-    },
-  ];
+  // Fetch dynamic data (you can replace this with API call later)
+  useEffect(() => {
+    setTimeout(() => {
+      setSchedule([
+        {
+          busNo: "101",
+          time: "08:00 AM",
+          busName: "City Express",
+          stops: [
+            { name: "Stop 1", coords: [28.6139, 77.209] },
+            { name: "Stop 2", coords: [28.62, 77.23] },
+            { name: "Stop 3", coords: [28.635, 77.25] },
+            { name: "Stop 4", coords: [28.64, 77.26] },
+          ],
+        },
+        {
+          busNo: "202",
+          time: "09:30 AM",
+          busName: "Metro Link",
+          stops: [
+            { name: "Stop 1", coords: [28.7041, 77.1025] },
+            { name: "Stop 2", coords: [28.71, 77.13] },
+            { name: "Stop 3", coords: [28.72, 77.15] },
+          ],
+        },
+      ]);
+      setLoading(false);
+    }, 1200);
+  }, []);
 
-  const toggleExpand = (index) => {
-    setExpanded(expanded === index ? null : index);
+  // ✅ Function to open Google Maps route
+  const openInGoogleMaps = (stops) => {
+    if (stops.length < 2) return alert("At least two stops needed for route");
+
+    // Format the Google Maps route URL
+    const origin = stops[0].coords.join(",");
+    const destination = stops[stops.length - 1].coords.join(",");
+    const waypoints = stops
+      .slice(1, -1)
+      .map((s) => s.coords.join(","))
+      .join("|");
+
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+
+    window.open(googleMapsUrl, "_blank"); // opens in new tab
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-lg text-gray-600 animate-pulse">
+          Loading schedule...
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Driver Schedule</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
+        Allocated Bus Trips
+      </h1>
 
-      <table className="w-full border border-gray-300">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="p-2 border">Bus No</th>
-            <th className="p-2 border">Time</th>
-            <th className="p-2 border">Bus Name</th>
-          </tr>
-        </thead>
-        <tbody>
-          {schedule.map((trip, index) => (
-            <React.Fragment key={index}>
-              <tr className="text-center">
-                <td className="p-2 border">{trip.busNo}</td>
-                <td className="p-2 border">{trip.time}</td>
-                <td
-                  className="p-2 border text-blue-600 cursor-pointer hover:underline"
-                  onClick={() => toggleExpand(index)}
-                >
-                  {trip.busName}
-                </td>
-              </tr>
+      <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {schedule.map((trip, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-500 border border-gray-200 overflow-hidden p-5"
+          >
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-semibold text-blue-700">
+                {trip.busName}
+              </h2>
+              <span className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                {trip.busNo}
+              </span>
+            </div>
 
-              {/* Expand row for stops + map */}
-              {expanded === index && (
-                <tr>
-                  <td colSpan="3" className="p-4 border bg-gray-50">
-                    <div className="mb-3">
-                      <strong>Stops:</strong>
-                      <ul className="list-disc list-inside">
-                        {trip.stops.map((stop, i) => (
-                          <li key={i}>{stop.name}</li>
-                        ))}
-                      </ul>
-                    </div>
+            <p className="text-gray-600 mb-4">🕒 {trip.time}</p>
 
-                    <MapContainer
-                      center={trip.stops[0].coords}
-                      zoom={13}
-                      style={{ height: "300px", width: "100%" }}
-                    >
-                      <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        attribution="&copy; OpenStreetMap contributors"
-                      />
-                      {trip.stops.map((stop, i) => (
-                        <Marker key={i} position={stop.coords}>
-                          <Popup>{stop.name}</Popup>
-                        </Marker>
-                      ))}
-                      <Polyline
-                        positions={trip.stops.map((stop) => stop.coords)}
-                        color="blue"
-                      />
-                    </MapContainer>
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
+            <button
+              onClick={() => openInGoogleMaps(trip.stops)}
+              className="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              View Route in Google Maps
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
