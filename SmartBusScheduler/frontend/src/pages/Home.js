@@ -5,8 +5,7 @@ function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-purple-600 via-indigo-500 to-blue-500 text-white">
-      <div className="text-center">
+      <div className="fixed inset-0 flex flex-col justify-center items-center bg-gradient-to-br from-purple-600 via-indigo-500 to-blue-500 text-white">      <div className="text-center">
         <h1 className="text-4xl font-extrabold mb-4 drop-shadow-md">
           Welcome to <span className="text-yellow-300">SmartBus Scheduler</span>
         </h1>

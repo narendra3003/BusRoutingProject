@@ -35,9 +35,10 @@ function Signup() {
       setError("");
 
       // Redirect by role
-      if (role === "driver") navigate("/driver");
-      else if (role === "customer") navigate("/customer");
-      else navigate("/");
+      //!!! IMPORTANT: After signing up, page directly going to authorised person because of which navbar is not shown properly. Either pass name in the navbar or ask user to log in after signing up.
+      // if (role === "driver") navigate("/driver");
+      // else if (role === "customer") navigate("/customer");
+      navigate("/");
 
     } catch (err) {
       console.error(err);
