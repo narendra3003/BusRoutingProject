@@ -9,6 +9,9 @@ import DriverDashboard from "./pages/DriverDashboard";
 import Signup from "./components/SignUp";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Unauthorized from "./pages/Unauthorized";
+import StopsDataFeed from "./pages/StopsDataFeed";
+import RoutesDataFeed from "./pages/RoutesDataFeed";
+import BusDataFeed from "./pages/BusDataFeed";
 
 function App() {
   const location = useLocation();
@@ -31,9 +34,7 @@ function App() {
           <Route
             path="/customer"
             element={
-              <ProtectedRoute allowedRoles={["customer"]}>
                 <CustomerDashboard />
-              </ProtectedRoute>
             }
           />
 
@@ -54,6 +55,26 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Route for stops data feed */}
+          <Route path="/stops-data-feed" 
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <StopsDataFeed />
+              </ProtectedRoute>
+            }/>
+        <Route path="/routes-data-feed" 
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <RoutesDataFeed />
+              </ProtectedRoute>
+            }/>
+        <Route path="/buses-data-feed" 
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <BusDataFeed />
+              </ProtectedRoute>
+            }/>
+          
         </Routes>
       </div>
     </div>

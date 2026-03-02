@@ -1,453 +1,909 @@
 # ============================================================
-# transit_optimizer.py
-# Modularized NSGA-II Transit Optimization Framework
+# FULL TRANSIT SCHEDULING + NSGA-II OPTIMIZER (SINGLE FILE)
 # ============================================================
+
+# import pandas as pd
+# import numpy as np
+# import random
+# from datetime import timedelta
+
+# # ============================================================
+# # 1️⃣ LOAD & PREPARE DATA
+# # ============================================================
+
+# def load_and_prepare_data(
+#     stops_path, routes_path,
+#     buses_path, drivers_path, obs_path,
+#     bucket_minutes=15
+# ):
+
+#     stops_df = pd.read_csv(stops_path)
+#     routes_df = pd.read_csv(routes_path)
+#     buses_df = pd.read_csv(buses_path)
+#     drivers_df = pd.read_csv(drivers_path)
+#     obs_df = pd.read_csv(obs_path)
+
+#     obs_df["observed_arrival"] = pd.to_datetime(obs_df["observed_arrival"])
+#     obs_df["observed_departure"] = pd.to_datetime(obs_df["observed_departure"])
+#     obs_df["date"] = pd.to_datetime(obs_df["date"])
+
+#     obs_df["time_bucket"] = obs_df["observed_departure"].dt.floor(
+#         f"{bucket_minutes}min"
+#     )
+
+#     return stops_df, routes_df, buses_df, drivers_df, obs_df
+
+
+# # ============================================================
+# # 2️⃣ CREATE OD MATRIX
+# # ============================================================
+
+# def create_od_matrix(obs_df, output_path="od_matrix.csv"):
+
+#     od_records = []
+
+#     for trip_id, group in obs_df.groupby("trip_id"):
+
+#         group = group.sort_values("observed_departure")
+#         stops = list(group["stop_id"])
+#         boardings = list(group["boarding_in"])
+
+#         for i in range(len(stops)):
+#             for j in range(i + 1, len(stops)):
+#                 od_records.append({
+#                     "origin": stops[i],
+#                     "destination": stops[j],
+#                     "flow": boardings[i] * 0.5
+#                 })
+
+#     od_df = pd.DataFrame(od_records)
+#     if len(od_df) > 0:
+#         od_df = od_df.groupby(
+#             ["origin", "destination"]
+#         ).sum().reset_index()
+#         od_df.to_csv(output_path, index=False)
+
+#     return od_df
+
+# # ============================================================
+# # CONFLICT CHECK
+# # ============================================================
+
+# def conflicts(existing_trips, new_trip, cooling_minutes=15):
+
+#     gap = timedelta(minutes=cooling_minutes)
+
+#     for trip in existing_trips:
+
+#         if not (
+#             new_trip["planned_start"] >= trip["planned_end"] + gap or
+#             new_trip["planned_end"] + gap <= trip["planned_start"]
+#         ):
+#             return True
+
+#     return False
+
+
+# # ============================================================
+# # 5️⃣ INITIAL POPULATION
+# # ============================================================
+
+# def generate_initial_population(trips, buses_df, population_size=30):
+
+#     population = []
+#     bus_ids = buses_df["bus_id"].tolist()
+
+#     for _ in range(population_size):
+
+#         genome = {}
+#         bus_schedule = {bus: [] for bus in bus_ids}
+
+#         for trip_id, trip in trips.items():
+
+#             feasible = []
+
+#             for bus in bus_ids:
+#                 if not conflicts(bus_schedule[bus], trip):
+#                     feasible.append(bus)
+
+#             if feasible:
+#                 chosen = random.choice(feasible)
+#                 genome[trip_id] = chosen
+#                 bus_schedule[chosen].append(trip)
+#             else:
+#                 genome[trip_id] = None
+
+#         population.append(genome)
+
+#     return population
+
+
+# # ============================================================
+# # 6️⃣ FITNESS FUNCTION
+# # ============================================================
+
+# def evaluate_solution(genome, trips, buses_df):
+
+#     unassigned = 0
+#     utilization = {bus: 0 for bus in buses_df["bus_id"]}
+
+#     for trip_id, bus_id in genome.items():
+
+#         if bus_id is None:
+#             unassigned += 1
+#         else:
+#             duration = (
+#                 trips[trip_id]["planned_end"] -
+#                 trips[trip_id]["planned_start"]
+#             ).total_seconds() / 3600
+#             utilization[bus_id] += duration
+
+#     values = list(utilization.values())
+#     variance = np.var(values)
+
+#     return (
+#         unassigned,
+#         -sum(values),
+#         variance
+#     )
+
+
+# # ============================================================
+# # 7️⃣ NSGA-II COMPONENTS
+# # ============================================================
+
+# def dominates(f1, f2):
+#     return all(a <= b for a, b in zip(f1, f2)) and any(
+#         a < b for a, b in zip(f1, f2)
+#     )
+
+
+# def fast_non_dominated_sort(population, fitnesses):
+
+#     S = {}
+#     n = {}
+#     rank = {}
+#     fronts = [[]]
+
+#     for p in range(len(population)):
+#         S[p] = []
+#         n[p] = 0
+
+#         for q in range(len(population)):
+#             if dominates(fitnesses[p], fitnesses[q]):
+#                 S[p].append(q)
+#             elif dominates(fitnesses[q], fitnesses[p]):
+#                 n[p] += 1
+
+#         if n[p] == 0:
+#             rank[p] = 0
+#             fronts[0].append(p)
+
+#     i = 0
+#     while fronts[i]:
+#         next_front = []
+#         for p in fronts[i]:
+#             for q in S[p]:
+#                 n[q] -= 1
+#                 if n[q] == 0:
+#                     rank[q] = i + 1
+#                     next_front.append(q)
+#         i += 1
+#         fronts.append(next_front)
+
+#     fronts.pop()
+#     return fronts
+
+
+# def crowding_distance(front, fitnesses):
+
+#     distance = {i: 0 for i in front}
+#     num_objectives = len(fitnesses[0])
+
+#     for m in range(num_objectives):
+
+#         front_sorted = sorted(front, key=lambda i: fitnesses[i][m])
+#         distance[front_sorted[0]] = float("inf")
+#         distance[front_sorted[-1]] = float("inf")
+
+#         f_min = fitnesses[front_sorted[0]][m]
+#         f_max = fitnesses[front_sorted[-1]][m]
+
+#         if f_max == f_min:
+#             continue
+
+#         for i in range(1, len(front_sorted) - 1):
+#             prev_f = fitnesses[front_sorted[i - 1]][m]
+#             next_f = fitnesses[front_sorted[i + 1]][m]
+#             distance[front_sorted[i]] += (
+#                 (next_f - prev_f) / (f_max - f_min)
+#             )
+
+#     return distance
+
+
+# def crossover(parent1, parent2):
+
+#     child = {}
+#     for key in parent1:
+#         child[key] = parent1[key] if random.random() < 0.5 else parent2[key]
+#     return child
+
+
+# def mutate(genome, buses_df, mutation_rate=0.05):
+
+#     bus_ids = buses_df["bus_id"].tolist()
+
+#     for trip_id in genome:
+#         if random.random() < mutation_rate:
+#             genome[trip_id] = random.choice(bus_ids)
+
+#     return genome
+
+
+# # ============================================================
+# # 8️⃣ NSGA-II MAIN LOOP
+# # ============================================================
+
+# def nsga2(trips, buses_df, generations=50, pop_size=30):
+
+#     population = generate_initial_population(
+#         trips, buses_df, pop_size
+#     )
+
+#     for _ in range(generations):
+
+#         fitnesses = [
+#             evaluate_solution(ind, trips, buses_df)
+#             for ind in population
+#         ]
+
+#         fronts = fast_non_dominated_sort(population, fitnesses)
+
+#         new_population = []
+
+#         for front in fronts:
+
+#             if len(new_population) + len(front) > pop_size:
+#                 distances = crowding_distance(front, fitnesses)
+#                 sorted_front = sorted(
+#                     front,
+#                     key=lambda i: distances[i],
+#                     reverse=True
+#                 )
+#                 for idx in sorted_front:
+#                     if len(new_population) < pop_size:
+#                         new_population.append(population[idx])
+#                 break
+#             else:
+#                 for idx in front:
+#                     new_population.append(population[idx])
+
+#         offspring = []
+#         while len(offspring) < pop_size:
+#             p1, p2 = random.sample(new_population, 2)
+#             child = crossover(p1, p2)
+#             child = mutate(child, buses_df)
+#             offspring.append(child)
+
+#         population = offspring
+
+#     fitnesses = [
+#         evaluate_solution(ind, trips, buses_df)
+#         for ind in population
+#     ]
+
+#     best_index = np.argmin([f[0] for f in fitnesses])
+#     return population[best_index]
+
+
+# # ============================================================
+# # 9️⃣ DECODE SCHEDULE
+# # ============================================================
+
+# def decode_solution(genome, trips):
+
+#     records = []
+
+#     for trip_id, bus_id in genome.items():
+
+#         if bus_id is None:
+#             continue
+
+#         trip = trips[trip_id]
+
+#         records.append({
+#             "bus_id": bus_id,
+#             "trip_id": trip_id,
+#             "route_id": trip["route_id"],
+#             "planned_start": trip["planned_start"],
+#             "planned_end": trip["planned_end"],
+#         })
+
+#     return pd.DataFrame(records)
+
+
+# # ============================================================
+# # 🔟 DRIVER ASSIGNMENT
+# # ============================================================
+
+# def assign_drivers(schedule_df, drivers_df, cooling_minutes=15):
+
+#     schedule_df = schedule_df.sort_values("planned_start")
+#     driver_ids = drivers_df["driver_id"].tolist()
+#     driver_schedule = {d: [] for d in driver_ids}
+
+#     assigned = []
+
+#     for _, row in schedule_df.iterrows():
+
+#         assigned_driver = None
+
+#         for driver in driver_ids:
+#             if not conflicts(driver_schedule[driver], row, cooling_minutes):
+#                 assigned_driver = driver
+#                 driver_schedule[driver].append(row)
+#                 break
+
+#         assigned.append(assigned_driver)
+
+#     schedule_df["assigned_driver_id"] = assigned
+
+#     return schedule_df
+
+
+# ============================================================
+# 🚀 FULL PIPELINE
+# ============================================================
+
+# def run_full_pipeline():
+
+#     stops_df, routes_df, buses_df, drivers_df, obs_df = \
+#         load_and_prepare_data(
+#             "stops.csv",
+#             "routes.csv",
+#             "buses.csv",
+#             "drivers.csv",
+#             "obs.csv"
+#         )
+
+#     print("Creating OD Matrix...")
+#     create_od_matrix(obs_df)
+
+#     print("Computing Demand...")
+#     demand_df = compute_demand(obs_df)
+
+#     print("Generating Trips...")
+#     trips = generate_linear_trips(demand_df)
+
+#     print("Running NSGA-II Optimization...")
+#     best_genome = nsga2(trips, buses_df)
+
+#     print("Decoding Schedule...")
+#     schedule_df = decode_solution(best_genome, trips)
+
+#     print("Assigning Drivers...")
+#     final_schedule = assign_drivers(schedule_df, drivers_df)
+
+#     final_schedule.to_csv("final_schedule.csv", index=False)
+
+#     print("Optimization Complete.")
+#     return final_schedule
+
+
+# # ============================================================
+# # RUN
+# # ============================================================
+
+# if __name__ == "__main__":
+#     run_full_pipeline()
+
+
+# # ============================================================
+# # 3️⃣ DEMAND COMPUTATION
+# # ============================================================
+
+def compute_demand(obs_df):
+
+    demand = (
+        obs_df
+        .groupby(["route_id", "time_bucket"])["boarding_in"]
+        .sum()
+        .reset_index()
+        .rename(columns={"boarding_in": "demand"})
+    )
+
+    return demand
+
+
+# # ============================================================
+# # 4️⃣ GENERATE LINEAR TRIPS
+# # ============================================================
+
+def generate_linear_trips(
+    demand_df,
+    trip_duration_minutes=60,
+    bus_capacity=40
+):
+
+    trips = {}
+    trip_counter = 0
+
+    for _, row in demand_df.iterrows():
+
+        route_id = row["route_id"]
+        demand = row["demand"]
+        start_time = row["time_bucket"]
+
+        num_trips = max(1, int(np.ceil(demand / bus_capacity)))
+
+        for _ in range(num_trips):
+
+            trip_id = f"T{trip_counter}"
+            trip_counter += 1
+
+            trips[trip_id] = {
+                "route_id": route_id,
+                "planned_start": start_time,
+                "planned_end": start_time + timedelta(
+                    minutes=trip_duration_minutes
+                )
+            }
+
+    return trips
 
 import pandas as pd
 import numpy as np
 import random
-import matplotlib.pyplot as plt
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 
 # ============================================================
-# PHASE 1 — DATA LOADING & PREPROCESSING
+# 1️⃣ LOAD & PREPARE DATA
 # ============================================================
 
 def load_and_prepare_data(
-    stops_path, routes_path, routes_timeplan_path,
+    stops_path, routes_path,
     buses_path, drivers_path, obs_path,
     bucket_minutes=15
 ):
-    """Load all CSVs, preprocess, and prepare optimization structures."""
-    # --- Load all CSVs ---
+
     stops_df = pd.read_csv(stops_path)
     routes_df = pd.read_csv(routes_path)
-    routes_timeplan_df = pd.read_csv(routes_timeplan_path)
     buses_df = pd.read_csv(buses_path)
     drivers_df = pd.read_csv(drivers_path)
     obs_df = pd.read_csv(obs_path)
 
-    # Convert timestamps
-    for col in ["observed_arrival", "observed_departure"]:
-        if col in obs_df.columns:
-            obs_df[col] = pd.to_datetime(obs_df[col], errors="coerce")
-    obs_df["date"] = pd.to_datetime(obs_df["date"], errors="coerce")
+    obs_df["observed_departure"] = pd.to_datetime(obs_df["observed_departure"])
+    obs_df["date"] = pd.to_datetime(obs_df["date"])
 
-    # --- Route duration ---
-    route_duration = (
-        routes_timeplan_df.groupby("route_id")["time_from_start_min"]
-        .max().reset_index()
-        .rename(columns={"time_from_start_min": "route_duration_min"})
-    )
-    routes_df = routes_df.merge(route_duration, on="route_id", how="left")
-
-    # --- Planned trip times ---
-    trip_times = (
-        obs_df.groupby(["trip_id", "route_id"])
-        .agg(
-            planned_start=("observed_departure", "min"),
-            planned_end=("observed_arrival", "max"),
-        )
-        .reset_index()
-    )
-    trip_times["planned_start"] = trip_times["planned_start"].fillna(
-        trip_times["route_id"].map(lambda r: obs_df.loc[obs_df["route_id"] == r, "date"].min())
-    )
-    trip_times["planned_end"] = trip_times["planned_end"].fillna(
-        trip_times["planned_start"] + pd.to_timedelta(
-            trip_times["route_id"].map(routes_df.set_index("route_id")["route_duration_min"]),
-            unit="m"
-        )
-    )
-    trip_times = trip_times.merge(
-        obs_df[["trip_id", "assigned_bus_id"]].drop_duplicates(),
-        on="trip_id", how="left"
+    obs_df["time_bucket"] = obs_df["observed_departure"].dt.floor(
+        f"{bucket_minutes}min"
     )
 
-    # --- Occupancy computation ---
-    def compute_trip_occupancy(df):
-        df = df.sort_values("observed_arrival")
-        df["occupancy"] = (df["boarding_in"] - df["boarding_out"]).cumsum()
-        return df
-
-    obs_df = obs_df.groupby("trip_id", group_keys=False).apply(compute_trip_occupancy)
-
-    trip_occupancy_stats = (
-        obs_df.groupby("trip_id")
-        .agg(
-            max_occupancy=("occupancy", "max"),
-            avg_occupancy=("occupancy", "mean"),
-            total_boarding=("boarding_in", "sum"),
-            total_alighting=("boarding_out", "sum")
-        )
-        .reset_index()
-    )
-
-    trip_data = trip_times.merge(trip_occupancy_stats, on="trip_id", how="left")
-
-    # --- Demand estimation ---
-    def get_bucket(dt):
-        if pd.isna(dt): return np.nan
-        return (dt.hour * 60 + dt.minute) // bucket_minutes
-
-    obs_df["bucket"] = obs_df["observed_arrival"].apply(get_bucket)
-    demand_buckets = (
-        obs_df.groupby(["route_id", "bucket"])
-        .agg(demand=("boarding_in", "sum"))
-        .reset_index()
-    )
-
-    # fill missing buckets
-    all_buckets = pd.DataFrame({"bucket": np.arange(0, (24*60)//bucket_minutes)})
-    routes_list = routes_df["route_id"].unique()
-    full_idx = pd.MultiIndex.from_product([routes_list, all_buckets["bucket"]], names=["route_id", "bucket"])
-    demand_buckets = (
-        demand_buckets.set_index(["route_id", "bucket"])
-        .reindex(full_idx, fill_value=0)
-        .reset_index()
-    )
-
-    # --- Structures ---
-    trips = {
-        row.trip_id: {
-            "route_id": row.route_id,
-            "planned_start": row.planned_start,
-            "planned_end": row.planned_end,
-            "avg_occupancy": row.avg_occupancy,
-            "max_occupancy": row.max_occupancy,
-            "total_boarding": row.total_boarding,
-            "total_alighting": row.total_alighting,
-        }
-        for _, row in trip_data.iterrows()
-    }
-
-    buses = buses_df.to_dict("records")
-    drivers = drivers_df.to_dict("records")
-
-    route_demand = {
-        (r, int(b)): d for r, b, d in demand_buckets[["route_id", "bucket", "demand"]].to_numpy()
-    }
-
-    return trips, buses, drivers, buses_df, drivers_df, route_demand
+    return stops_df, routes_df, buses_df, drivers_df, obs_df
 
 
 # ============================================================
-# PHASE 2 — OBJECTIVE FUNCTIONS
+# 2️⃣ DYNAMIC DEMAND COMPUTATION (QUEUE MODEL)
 # ============================================================
 
-def random_individual(trips, buses, drivers):
-    bus_ids = [b["bus_id"] for b in buses]
-    driver_ids = [d["driver_id"] for d in drivers]
-    return {t: (random.choice(bus_ids), random.choice(driver_ids)) for t in trips.keys()}
+def compute_dynamic_trips(
+    obs_df,
+    trip_duration_minutes=60,
+    bus_capacity=40
+):
+
+    demand_df = (
+        obs_df
+        .groupby(["route_id", "time_bucket"])["boarding_in"]
+        .sum()
+        .reset_index()
+        .rename(columns={"boarding_in": "new_demand"})
+        .sort_values("time_bucket")
+    )
+
+    trips = {}
+    trip_counter = 0
+
+    for route_id, group in demand_df.groupby("route_id"):
+
+        remaining_demand = 0
+
+        for _, row in group.iterrows():
+
+            remaining_demand += row["new_demand"]
+            start_time = row["time_bucket"]
+
+            if remaining_demand <= 0:
+                continue
+
+            num_trips = int(np.ceil(remaining_demand / bus_capacity))
+
+            if num_trips == 0:
+                continue
+
+            headway = trip_duration_minutes / max(num_trips, 1)
+
+            for i in range(num_trips):
+
+                planned_start = start_time + timedelta(
+                    minutes=i * headway
+                )
+
+                trip_id = f"T{trip_counter}"
+                trip_counter += 1
+
+                trips[trip_id] = {
+                    "route_id": route_id,
+                    "planned_start": planned_start,
+                    "planned_end": planned_start + timedelta(
+                        minutes=trip_duration_minutes
+                    )
+                }
+
+                remaining_demand -= bus_capacity
+
+    return trips
 
 
-def objective_crowding(individual, trips, buses_df):
-    genome = individual.get('genome', individual)
-    bus_capacity = buses_df.set_index("bus_id")["max_capacity"].to_dict()
-    penalty = 0.0
-    for trip_id, assignment in genome.items():
-        try:
-            bus_id, _ = assignment
-        except Exception:
+# ============================================================
+# 3️⃣ CONFLICT CHECK
+# ============================================================
+
+def conflicts(existing_trips, new_trip, cooling_minutes=15):
+
+    gap = timedelta(minutes=cooling_minutes)
+
+    for trip in existing_trips:
+
+        if not (
+            new_trip["planned_start"] >= trip["planned_end"] + gap or
+            new_trip["planned_end"] + gap <= trip["planned_start"]
+        ):
+            return True
+
+    return False
+
+
+# ============================================================
+# 4️⃣ SCHEDULE ENTITY
+# ============================================================
+
+class Schedule:
+
+    def __init__(self):
+        self.bus_trips = {}
+
+    def add_trip(self, bus_id, trip):
+        if bus_id not in self.bus_trips:
+            self.bus_trips[bus_id] = []
+        self.bus_trips[bus_id].append(trip)
+
+    def is_feasible(self, bus_id, trip):
+        if bus_id not in self.bus_trips:
+            return True
+        return not conflicts(self.bus_trips[bus_id], trip)
+
+
+# ============================================================
+# 5️⃣ INITIAL POPULATION
+# ============================================================
+
+def generate_initial_population(trips, buses_df, population_size=30):
+
+    population = []
+    bus_ids = buses_df["bus_id"].tolist()
+
+    for _ in range(population_size):
+
+        genome = {}
+        schedule = Schedule()
+
+        for trip_id, trip in trips.items():
+
+            feasible_buses = [
+                bus for bus in bus_ids
+                if schedule.is_feasible(bus, trip)
+            ]
+
+            if feasible_buses:
+                chosen = random.choice(feasible_buses)
+                genome[trip_id] = chosen
+                schedule.add_trip(chosen, trip)
+            else:
+                genome[trip_id] = None
+
+        population.append(genome)
+
+    return population
+
+
+# ============================================================
+# 6️⃣ REPAIR GENOME (CRITICAL FIX)
+# ============================================================
+
+def repair_genome(genome, trips):
+
+    schedule = Schedule()
+
+    for trip_id, bus_id in genome.items():
+
+        if bus_id is None:
             continue
-        trip = trips.get(trip_id)
-        if trip is None: continue
-        max_occ = trip.get("max_occupancy")
-        if pd.isna(max_occ): continue
-        cap = bus_capacity.get(bus_id, 50)
-        load_factor = max_occ / cap if cap > 0 else 1
-        if load_factor > 1:
-            penalty += (load_factor - 1) ** 2
-    return float(penalty)
 
+        trip = trips[trip_id]
 
-def objective_demand_alignment(individual, trips, route_demand, bucket_minutes=15):
-    genome = individual.get('genome', individual)
-    route_bucket_trips = {}
-    for trip_id, assignment in genome.items():
-        trip = trips.get(trip_id)
-        if not trip: continue
-        start = trip.get("planned_start")
-        if pd.isna(start): continue
-        start = pd.to_datetime(start)
-        bucket = int((start.hour * 60 + start.minute) // bucket_minutes)
-        key = (trip["route_id"], bucket)
-        route_bucket_trips[key] = route_bucket_trips.get(key, 0) + 1
-
-    penalty = 0.0
-    for key, trips_in_bucket in route_bucket_trips.items():
-        demand = route_demand.get(key, 0)
-        expected_trips = max(1, int(demand // 50))
-        penalty += abs(trips_in_bucket - expected_trips)
-    return float(penalty)
-
-
-def objective_wait_time(individual, trips):
-    genome = individual.get('genome', individual)
-    route_trips = {}
-    for t, assign in genome.items():
-        tr = trips.get(t)
-        if not tr or pd.isna(tr.get("planned_start")): continue
-        route_trips.setdefault(tr["route_id"], []).append(pd.to_datetime(tr["planned_start"]))
-
-    total_wait = 0.0
-    route_count = 0
-    for r, starts in route_trips.items():
-        starts = sorted(starts)
-        if len(starts) > 1:
-            gaps = [(starts[i+1] - starts[i]).total_seconds()/60 for i in range(len(starts)-1)]
-            total_wait += np.mean(gaps)
-            route_count += 1
-    return total_wait / route_count if route_count > 0 else 0.0
-
-
-def objective_idle_time(individual, trips):
-    genome = individual.get('genome', individual)
-    bus_trips = {}
-    for t, (bus, _) in genome.items():
-        bus_trips.setdefault(bus, []).append(trips.get(t))
-    total_idle = 0.0
-    for bus, tlist in bus_trips.items():
-        tlist = [x for x in tlist if x and not pd.isna(x.get("planned_start"))]
-        tlist = sorted(tlist, key=lambda x: x["planned_start"])
-        for i in range(len(tlist)-1):
-            gap = (pd.to_datetime(tlist[i+1]["planned_start"]) - pd.to_datetime(tlist[i]["planned_end"])).total_seconds()/60
-            if gap > 0:
-                total_idle += gap
-    return float(total_idle)
-
-
-def objective_driver_fairness(individual, trips, drivers_df):
-    genome = individual.get('genome', individual)
-    driver_work = {}
-    for t, (_, drv) in genome.items():
-        tr = trips.get(t)
-        if not tr: continue
-        s, e = tr["planned_start"], tr["planned_end"]
-        if pd.isna(s) or pd.isna(e): continue
-        dur = (pd.to_datetime(e) - pd.to_datetime(s)).total_seconds()/60
-        driver_work[drv] = driver_work.get(drv, 0) + dur
-    if not driver_work:
-        return 0.0
-    return float(np.var(list(driver_work.values())))
-
-# ============================================================
-# PHASE 3 — NSGA-II COMPONENTS (MODULAR VERSION)
-# ============================================================
-
-def repair_genome(genome, trips, buses_df, drivers_df):
-    """Ensure genome has valid bus and driver assignments."""
-    valid_buses = buses_df["bus_id"].tolist()
-    valid_drivers = drivers_df["driver_id"].tolist()
-    repaired = {}
-    for t in trips.keys():
-        v = genome.get(t)
-        if isinstance(v, tuple) and len(v) == 2:
-            bus, drv = v
-            if bus not in valid_buses:
-                bus = random.choice(valid_buses)
-            if drv not in valid_drivers:
-                drv = random.choice(valid_drivers)
-            repaired[t] = (bus, drv)
+        if schedule.is_feasible(bus_id, trip):
+            schedule.add_trip(bus_id, trip)
         else:
-            repaired[t] = (random.choice(valid_buses), random.choice(valid_drivers))
-    return repaired
+            genome[trip_id] = None
 
-
-# ---------------- Selection ----------------
-
-def tournament_selection(population, k=2):
-    """Select one individual via tournament selection."""
-    contenders = random.sample(population, k)
-    contenders.sort(key=lambda ind: (ind['rank'], -ind.get('distance', 0)))
-    return contenders[0]
-
-
-# ---------------- Crossover ----------------
-
-def crossover(parent1, parent2, crossover_rate=0.9):
-    """Perform uniform crossover between two parent genomes."""
-    if random.random() > crossover_rate:
-        return parent1.copy(), parent2.copy()
-
-    child1, child2 = {}, {}
-    for trip_id in parent1.keys():
-        if random.random() < 0.5:
-            child1[trip_id] = parent1[trip_id]
-            child2[trip_id] = parent2[trip_id]
-        else:
-            child1[trip_id] = parent2[trip_id]
-            child2[trip_id] = parent1[trip_id]
-    return child1, child2
-
-
-# ---------------- Mutation ----------------
-
-def mutate(genome, buses_df, drivers_df, mutation_rate=0.2):
-    """Randomly reassign some bus/driver combinations."""
-    if random.random() > mutation_rate:
-        return genome
-    valid_buses = buses_df["bus_id"].tolist()
-    valid_drivers = drivers_df["driver_id"].tolist()
-    for trip_id in genome.keys():
-        if random.random() < mutation_rate:
-            genome[trip_id] = (
-                random.choice(valid_buses),
-                random.choice(valid_drivers)
-            )
     return genome
 
 
-# ---------------- Evaluate ----------------
+# ============================================================
+# 7️⃣ FITNESS FUNCTION (MULTI-OBJECTIVE)
+# ============================================================
 
-def evaluate(individual, trips, buses_df, drivers_df, route_demand):
-    genome = repair_genome(individual.get('genome', individual), trips, buses_df, drivers_df)
-    F1 = objective_crowding(genome, trips, buses_df)
-    F2 = objective_demand_alignment(genome, trips, route_demand)
-    F3 = objective_wait_time(genome, trips)
-    F4 = objective_idle_time(genome, trips)
-    F5 = objective_driver_fairness(genome, trips, drivers_df)
-    return [F1, F2, F3, F4, F5]
+def evaluate_solution(genome, trips, buses_df):
 
+    unassigned = 0
+    utilization = {bus: 0 for bus in buses_df["bus_id"]}
 
-# ---------------- Dominance Logic ----------------
+    for trip_id, bus_id in genome.items():
 
-def dominates(ind1, ind2):
-    """Check Pareto dominance between two individuals."""
+        if bus_id is None:
+            unassigned += 1
+        else:
+            duration = (
+                trips[trip_id]["planned_end"] -
+                trips[trip_id]["planned_start"]
+            ).total_seconds() / 3600
+            utilization[bus_id] += duration
+
+    values = list(utilization.values())
+    variance = np.var(values)
+    buses_used = len([v for v in values if v > 0])
+
     return (
-        all(a <= b for a, b in zip(ind1['fitness'], ind2['fitness'])) and
-        any(a < b for a, b in zip(ind1['fitness'], ind2['fitness']))
+        unassigned,
+        -sum(values),
+        variance,
+        buses_used
     )
 
 
-def non_dominated_sort(pop):
-    """Fast non-dominated sorting for NSGA-II."""
-    S = [[] for _ in range(len(pop))]
-    n = [0] * len(pop)
-    rank = [0] * len(pop)
+# ============================================================
+# 8️⃣ NSGA-II CORE
+# ============================================================
+
+def dominates(f1, f2):
+    return all(a <= b for a, b in zip(f1, f2)) and any(
+        a < b for a, b in zip(f1, f2)
+    )
+
+
+def fast_non_dominated_sort(population, fitnesses):
+
+    S = {}
+    n = {}
     fronts = [[]]
 
-    for p_idx, p in enumerate(pop):
-        for q_idx, q in enumerate(pop):
-            if p_idx == q_idx:
-                continue
-            if dominates(p, q):
-                S[p_idx].append(q_idx)
-            elif dominates(q, p):
-                n[p_idx] += 1
-        if n[p_idx] == 0:
-            rank[p_idx] = 0
-            fronts[0].append(p_idx)
+    for p in range(len(population)):
+        S[p] = []
+        n[p] = 0
+
+        for q in range(len(population)):
+            if dominates(fitnesses[p], fitnesses[q]):
+                S[p].append(q)
+            elif dominates(fitnesses[q], fitnesses[p]):
+                n[p] += 1
+
+        if n[p] == 0:
+            fronts[0].append(p)
 
     i = 0
     while fronts[i]:
-        Q = []
-        for p_idx in fronts[i]:
-            for q_idx in S[p_idx]:
-                n[q_idx] -= 1
-                if n[q_idx] == 0:
-                    rank[q_idx] = i + 1
-                    Q.append(q_idx)
+        next_front = []
+        for p in fronts[i]:
+            for q in S[p]:
+                n[q] -= 1
+                if n[q] == 0:
+                    next_front.append(q)
         i += 1
-        fronts.append(Q)
+        fronts.append(next_front)
+
     fronts.pop()
-    return [[pop[idx] for idx in front] for front in fronts]
+    return fronts
 
 
-def crowding_distance(front):
-    """Compute crowding distance for individuals in a front."""
-    if not front:
-        return
-    num_obj = len(front[0]['fitness'])
-    for ind in front:
-        ind['distance'] = 0
-    for m in range(num_obj):
-        front.sort(key=lambda x: x['fitness'][m])
-        front[0]['distance'] = front[-1]['distance'] = float('inf')
-        fmin, fmax = front[0]['fitness'][m], front[-1]['fitness'][m]
-        if fmax == fmin:
+def crowding_distance(front, fitnesses):
+
+    distance = {i: 0 for i in front}
+    num_objectives = len(fitnesses[0])
+
+    for m in range(num_objectives):
+
+        front_sorted = sorted(front, key=lambda i: fitnesses[i][m])
+
+        distance[front_sorted[0]] = float("inf")
+        distance[front_sorted[-1]] = float("inf")
+
+        f_min = fitnesses[front_sorted[0]][m]
+        f_max = fitnesses[front_sorted[-1]][m]
+
+        if f_max == f_min:
             continue
-        for i in range(1, len(front) - 1):
-            next_f, prev_f = front[i + 1]['fitness'][m], front[i - 1]['fitness'][m]
-            front[i]['distance'] += (next_f - prev_f) / (fmax - fmin)
+
+        for i in range(1, len(front_sorted) - 1):
+            prev_f = fitnesses[front_sorted[i - 1]][m]
+            next_f = fitnesses[front_sorted[i + 1]][m]
+            distance[front_sorted[i]] += (
+                (next_f - prev_f) / (f_max - f_min)
+            )
+
+    return distance
 
 
-# ---------------- NSGA-II Core ----------------
+def crossover(parent1, parent2):
+    return {
+        key: parent1[key] if random.random() < 0.5 else parent2[key]
+        for key in parent1
+    }
 
-def nsga2(trips, buses, drivers, buses_df, drivers_df, route_demand,
-          pop_size=50, ngen=100, cxpb=0.9, mutpb=0.2):
-    """Main NSGA-II evolutionary loop."""
-    # --- Initialization ---
-    population = [{"genome": random_individual(trips, buses, drivers)} for _ in range(pop_size)]
-    for ind in population:
-        ind["fitness"] = evaluate(ind, trips, buses_df, drivers_df, route_demand)
 
-    # --- Evolutionary loop ---
-    for gen in range(ngen):
-        # 1. Rank and crowding distance
-        fronts = non_dominated_sort(population)
-        for i, front in enumerate(fronts):
-            for ind in front:
-                ind["rank"] = i
-            crowding_distance(front)
+def mutate(genome, buses_df, mutation_rate=0.05):
 
-        # 2. Generate offspring
-        offspring = []
-        while len(offspring) < pop_size:
-            parent1 = tournament_selection(population)
-            parent2 = tournament_selection(population)
-            c1_genome, c2_genome = crossover(parent1["genome"], parent2["genome"], crossover_rate=cxpb)
-            c1_genome = mutate(c1_genome, buses_df, drivers_df, mutation_rate=mutpb)
-            c2_genome = mutate(c2_genome, buses_df, drivers_df, mutation_rate=mutpb)
-            offspring.extend([
-                {"genome": c1_genome},
-                {"genome": c2_genome}
-            ])
+    bus_ids = buses_df["bus_id"].tolist()
 
-        # 3. Evaluate new individuals
-        for child in offspring:
-            child["fitness"] = evaluate(child, trips, buses_df, drivers_df, route_demand)
+    for trip_id in genome:
+        if random.random() < mutation_rate:
+            genome[trip_id] = random.choice(bus_ids)
 
-        # 4. Combine & truncate population (elitism)
-        combined = population + offspring
+    return genome
+
+
+# ============================================================
+# 9️⃣ NSGA-II MAIN
+# ============================================================
+
+def nsga2(trips, buses_df, generations=50, pop_size=30):
+
+    population = generate_initial_population(
+        trips, buses_df, pop_size
+    )
+
+    for _ in range(generations):
+
+        fitnesses = [
+            evaluate_solution(ind, trips, buses_df)
+            for ind in population
+        ]
+
+        fronts = fast_non_dominated_sort(population, fitnesses)
+
         new_population = []
-        fronts = non_dominated_sort(combined)
+
         for front in fronts:
-            crowding_distance(front)
-            if len(new_population) + len(front) <= pop_size:
-                new_population.extend(front)
-            else:
-                front.sort(key=lambda x: -x["distance"])
-                needed = pop_size - len(new_population)
-                new_population.extend(front[:needed])
+
+            if len(new_population) + len(front) > pop_size:
+                distances = crowding_distance(front, fitnesses)
+                sorted_front = sorted(
+                    front,
+                    key=lambda i: distances[i],
+                    reverse=True
+                )
+                for idx in sorted_front:
+                    if len(new_population) < pop_size:
+                        new_population.append(population[idx])
                 break
+            else:
+                for idx in front:
+                    new_population.append(population[idx])
 
-        population = new_population
-        print(f"Generation {gen+1}/{ngen} complete. Pareto front size: {len(fronts[0])}")
+        offspring = []
 
-    # Return final Pareto front
-    final_fronts = non_dominated_sort(population)
-    return final_fronts[0]
+        while len(offspring) < pop_size:
+            p1, p2 = random.sample(new_population, 2)
+            child = crossover(p1, p2)
+            child = mutate(child, buses_df)
+            child = repair_genome(child, trips)
+            offspring.append(child)
+
+        population = offspring
+
+    fitnesses = [
+        evaluate_solution(ind, trips, buses_df)
+        for ind in population
+    ]
+
+    best_index = np.argmin([f[0] for f in fitnesses])
+    return population[best_index]
+
 
 # ============================================================
-# PHASE 4 — SOLUTION DECODING & EXPORT
+# 🔟 DECODE FINAL SCHEDULE
 # ============================================================
 
-def decode_solution(individual, trips):
-    """Convert optimized genome into a flat schedule DataFrame."""
-    genome = individual.get("genome", individual)
+def decode_solution(genome, trips):
+
     records = []
-    for trip_id, (bus_id, driver_id) in genome.items():
-        trip = trips.get(trip_id)
-        if not trip:
+
+    for trip_id, bus_id in genome.items():
+
+        if bus_id is None:
             continue
+
+        trip = trips[trip_id]
+
         records.append({
             "bus_id": bus_id,
             "trip_id": trip_id,
             "route_id": trip["route_id"],
             "planned_start": trip["planned_start"],
             "planned_end": trip["planned_end"],
-            "assigned_driver_id": driver_id
         })
+
     return pd.DataFrame(records)
+
+
+# ============================================================
+# 1️⃣1️⃣ DRIVER ASSIGNMENT WITH SHIFTS
+# ============================================================
+
+def assign_drivers(schedule_df, drivers_df):
+
+    shift_hours = 8
+    max_shift_hours = 8
+
+    driver_ids = drivers_df["driver_id"].tolist()
+
+    driver_shifts = []
+
+    for driver in driver_ids:
+
+        base_time = schedule_df["planned_start"].min().normalize()
+
+        for s in range(3):
+            shift_start = base_time + timedelta(hours=s * shift_hours)
+            shift_end = shift_start + timedelta(hours=shift_hours)
+
+            driver_shifts.append({
+                "driver_id": driver,
+                "shift_id": f"{driver}_S{s}",
+                "shift_start": shift_start,
+                "shift_end": shift_end,
+                "worked_hours": 0,
+                "trips": []
+            })
+
+    schedule_df = schedule_df.sort_values("planned_start")
+    assigned = []
+
+    for _, row in schedule_df.iterrows():
+
+        trip_duration = (
+            row["planned_end"] - row["planned_start"]
+        ).total_seconds() / 3600
+
+        assigned_driver = None
+
+        for shift in driver_shifts:
+
+            if (
+                row["planned_start"] >= shift["shift_start"] and
+                row["planned_end"] <= shift["shift_end"] and
+                shift["worked_hours"] + trip_duration <= max_shift_hours and
+                not conflicts(shift["trips"], row)
+            ):
+                assigned_driver = shift["driver_id"]
+                shift["worked_hours"] += trip_duration
+                shift["trips"].append(row)
+                break
+
+        assigned.append(assigned_driver)
+
+    schedule_df["assigned_driver_id"] = assigned
+
+    return schedule_df

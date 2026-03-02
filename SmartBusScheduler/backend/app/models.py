@@ -46,13 +46,17 @@ class Route(Base):
     __tablename__ = "routes"
 
     route_id = Column(Integer, primary_key=True, index=True)
+    route_code = Column(String, unique=True, nullable=False, index=True)
     route_short_name = Column(String, nullable=True)
     route_long_name = Column(String, nullable=True)
-    # simple storage of stop order as integer array of stop_ids (Postgres) - nullable for sqlite
-    stops = Column(ARRAY(Integer), nullable=True)
 
-    trips = relationship("Trip", back_populates="route")
+    stops = Column(ARRAY(Integer), nullable=True)      # ordered stop_ids
+    stop_time = Column(ARRAY(Integer), nullable=True)  # cumulative minutes
+    stop_dist = Column(ARRAY(Integer), nullable=True)
+
+    trips = relationship("Trip", back_populates="route", cascade="all, delete-orphan")
     observations = relationship("ObservationData", back_populates="route")
+
 
 
 # -----------------
@@ -146,7 +150,9 @@ class BusData(Base):
     __tablename__ = "bus_data"
 
     bus_id = Column(Integer, primary_key=True, index=True)
-    passenger_cap_count = Column(Integer, nullable=False)
+    bus_no = Column(String(30), unique=True, nullable=False, index=True)
+    seating_capacity = Column(Integer, nullable=False)
+    max_capacity = Column(Integer, nullable=False)
 
 
 # -----------------

@@ -1,29 +1,36 @@
-import React, { useState } from "react";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
+import React, { useState, useRef } from "react";
 
 function AdminDashboard() {
-  const [files, setFiles] = useState({
-    stops_data: null,
-    routes_data: null,
-    routes_timeplan: null,
-    buses_data: null,
-    drivers_data: null,
-    observations_data: null,
-  });
+  const [files, setFiles] = useState({ observations_data: null });
   const [errors, setErrors] = useState([]);
   const [schedule, setSchedule] = useState([]);
-  const [expandedBus, setExpandedBus] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [excelLink, setExcelLink] = useState("");
+  const fileInputRefs = useRef({});
 
   const REQUIRED_KEYS = Object.keys(files);
 
   // ------------------------------
-  // File input handling
+  // File handling
   // ------------------------------
   const handleFileChange = (key, file) => {
+    setSuccess("");
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      setErrors([`${key} must be a .csv file`]);
+      return;
+    }
+
+    setErrors([]);
     setFiles((prev) => ({ ...prev, [key]: file }));
+  };
+
+  const handleDrop = (e, key) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    handleFileChange(key, file);
   };
 
   // ------------------------------
@@ -33,164 +40,268 @@ function AdminDashboard() {
     const newErrors = [];
 
     REQUIRED_KEYS.forEach((key) => {
-      const file = files[key];
-      if (!file) {
-        newErrors.push(`${key} not selected`);
-      } else if (!file.name.toLowerCase().endsWith(".csv")) {
-        newErrors.push(`${key} must be a .csv file`);
+      if (!files[key]) {
+        newErrors.push(`${key.replace("_", " ")} not selected`);
       }
     });
 
     setErrors(newErrors);
-    if (newErrors.length > 0) {
-      alert("Please fix the errors before uploading!");
-      return false;
-    }
-    return true;
+    return newErrors.length === 0;
   };
 
   // ------------------------------
   // Backend call
   // ------------------------------
-  const handleUpload = async () => {
+  // const handleUpload = async () => {
+  //   if (!validateFiles()) return;
+
+  //   setLoading(true);
+  //   setErrors([]);
+  //   setSchedule([]);
+  //   setSuccess("");
+
+  //   try {
+  //     const formData = new FormData();
+  //     formData.append("observations", files.observations_data);
+  //     formData.append("pop_size", 30);
+  //     formData.append("ngen", 40);
+
+  //     const res = await fetch("http://localhost:8000/admin/optimize", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+
+  //     if (!res.ok) {
+  //       const errorData = await res.json();
+  //       throw new Error(errorData.detail || "Optimization failed");
+  //     }
+
+  //     const data = await res.json();
+  //     setSchedule(data.preview || []);
+  //     setSuccess("Optimization completed successfully 🎉");
+  //   } catch (err) {
+  //     setErrors([err.message]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const handleDownloadTest = async () => {
     if (!validateFiles()) return;
 
     setLoading(true);
     setErrors([]);
     setSchedule([]);
+    setSuccess("");
+    setExcelLink("");
 
     try {
       const formData = new FormData();
-      formData.append("stops", files.stops_data);
-      formData.append("routes", files.routes_data);
-      formData.append("routes_timeplan", files.routes_timeplan);
-      formData.append("buses", files.buses_data);
-      formData.append("drivers", files.drivers_data);
       formData.append("observations", files.observations_data);
 
-      // Optional GA params
-      formData.append("pop_size", 30);
-      formData.append("ngen", 40);
-
-      const res = await fetch("http://localhost:8000/admin/optimize", {
+      const res = await fetch("http://localhost:8000/admin/optimize-and-report", {
         method: "POST",
         body: formData,
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Optimization failed");
+        const err = await res.json();
+        throw new Error(err.message || "Optimization failed");
       }
 
       const data = await res.json();
 
-      alert("✅ Optimization completed successfully!");
-      console.log("Server response:", data);
-
-      // Display preview schedule from backend
       setSchedule(data.preview || []);
+      setSuccess("Report generated successfully!");
+      setExcelLink(`http://localhost:8000${data.excel_download}`);
     } catch (err) {
-      console.error(err);
-      alert(`❌ Upload failed: ${err.message}`);
+      setErrors([err.message]);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleBus = (busNumber) => {
-    setExpandedBus(expandedBus === busNumber ? null : busNumber);
-  };
-
   // ------------------------------
-  // UI rendering
+  // UI
   // ------------------------------
   return (
-    <div className="p-6 space-y-8">
-      {/* Dataset Uploader */}
-      <div className="bg-white p-4 shadow rounded">
-        <h2 className="text-xl font-bold mb-3">Upload Required Dataset Files</h2>
+    <div className="min-h-screen bg-gray-100 p-8 space-y-8">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {REQUIRED_KEYS.map((key) => (
-            <div key={key} className="flex flex-col">
-              <label className="font-semibold mb-1 capitalize">
-                {key.replace("_", " ")}:
-              </label>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={(e) => handleFileChange(key, e.target.files[0])}
-              />
-              {files[key] && (
-                <span className="text-green-600 text-sm mt-1">
-                  ✅ {files[key].name}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {errors.length > 0 && (
-          <ul className="mt-4 text-red-600 text-sm list-disc list-inside">
-            {errors.map((err, idx) => (
-              <li key={idx}>{err}</li>
-            ))}
-          </ul>
-        )}
-
-        <button
-          onClick={handleUpload}
-          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          disabled={loading}
-        >
-          {loading ? "Uploading & Optimizing..." : "Validate & Upload"}
-        </button>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Admin Optimization Dashboard
+        </h1>
+        <p className="text-gray-500 mt-1">
+          Upload dataset and generate optimized bus schedules
+        </p>
       </div>
 
-      {/* Schedule Viewer */}
-      {schedule.length > 0 && (
-        <div className="bg-white p-4 shadow rounded">
-          <h2 className="text-xl font-bold mb-3">Optimized Schedule Preview</h2>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-purple-100 text-left">
-                <th className="p-2 border">Bus ID</th>
-                <th className="p-2 border">Trip ID</th>
-                <th className="p-2 border">Route ID</th>
-                <th className="p-2 border">Planned Start</th>
-                <th className="p-2 border">Planned End</th>
-                <th className="p-2 border">Driver ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {schedule.map((row, idx) => (
-                <tr key={idx} className="hover:bg-purple-50">
-                  <td className="p-2 border">{row.bus_id}</td>
-                  <td className="p-2 border">{row.trip_id}</td>
-                  <td className="p-2 border">{row.route_id}</td>
-                  <td className="p-2 border">{row.planned_start}</td>
-                  <td className="p-2 border">{row.planned_end}</td>
-                  <td className="p-2 border">{row.assigned_driver_id}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Quick Links */}
+      <div className="flex gap-4">
+        <a href="/stops-data-feed" className="text-purple-600 hover:underline">
+          Stops Data Feed
+        </a>
+        <a href="/routes-data-feed" className="text-purple-600 hover:underline">
+          Routes Data Feed
+        </a>
+        <a href="/buses-data-feed" className="text-purple-600 hover:underline">
+          Buses Data Feed
+        </a>
+      </div>
 
-      {/* Calendar Section */}
-      {schedule.length > 0 && (
-        <div className="bg-white p-4 shadow rounded flex flex-col items-center">
-          <h2 className="text-xl font-bold mb-3">Check Schedule by Date</h2>
-          <Calendar
-            onChange={setSelectedDate}
-            value={selectedDate}
-            className="mb-4"
-          />
-          <p className="text-gray-600">
-            Showing schedule for:{" "}
-            <span className="font-semibold">{selectedDate.toDateString()}</span>
+      {/* Upload Card */}
+      <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
+
+        <h2 className="text-xl font-semibold text-gray-700">
+          Upload Required Dataset
+        </h2>
+
+        {REQUIRED_KEYS.map((key) => (
+          <div
+            key={key}
+            onDrop={(e) => handleDrop(e, key)}
+            onDragOver={(e) => e.preventDefault()}
+            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-purple-400 transition"
+            onClick={() => fileInputRefs.current[key].click()}
+          >
+            <input
+              type="file"
+              accept=".csv"
+              ref={(el) => (fileInputRefs.current[key] = el)}
+              hidden
+              onChange={(e) =>
+                handleFileChange(key, e.target.files[0])
+              }
+            />
+
+            {!files[key] ? (
+              <p className="text-gray-500">
+                Drag & Drop or Click to Upload{" "}
+                <span className="font-semibold">
+                  {key.replace("_", " ")}
+                </span>
+              </p>
+            ) : (
+              <div className="flex justify-center items-center gap-2">
+                <span className="text-green-600 font-medium">
+                  {files[key].name}
+                </span>
+                <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded">
+                  Selected
+                </span>
+              </div>
+            )}
+          </div>
+        ))}
+
+
+        {/* Errors */}
+        {errors.length > 0 && (
+          <div className="bg-red-100 text-red-700 p-3 rounded">
+            {errors.map((err, idx) => <p key={idx}>{err}</p>)}
+          </div>
+        )}
+
+        {/* Success */}
+        {success && (
+          <div className="bg-green-100 text-green-700 p-3 rounded">{success}</div>
+        )}
+
+        {/* Buttons */}
+        <div className="flex gap-4">
+          <button
+            onClick={handleDownloadTest}
+            disabled={loading}
+            className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition disabled:bg-gray-400 flex justify-center items-center"
+          >
+            {loading ? (
+              <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+            ) : (
+              "Validate & Download Report"
+            )}
+          </button>
+
+          {excelLink && (
+            <a
+              href={excelLink}
+              download
+              className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 text-center"
+            >
+              Download Excel
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="bg-white rounded-xl shadow-md p-5">
+          <h3 className="text-sm text-gray-500">Total Buses Scheduled</h3>
+          <p className="text-2xl font-bold text-purple-600">
+            {schedule.length > 0 ? schedule.length : "N/A"}
           </p>
+        </div>
+        <div className="bg-white rounded-xl shadow-md p-5">
+          <h3 className="text-sm text-gray-500">Unique Drivers Assigned</h3>
+          <p className="text-2xl font-bold text-purple-600">
+            {new Set(schedule.map((row) => row.assigned_driver_id)).size || "N/A"}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl shadow-md p-5">
+          <h3 className="text-sm text-gray-500">Unique Routes Covered</h3>
+          <p className="text-2xl font-bold text-purple-600">
+            {new Set(schedule.map((row) => row.route_id)).size || "N/A"}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl shadow-md p-5">
+          <h3 className="text-sm text-gray-500">Optimization Status</h3>
+          <p className={`text-2xl font-bold ${
+            schedule.length > 0 ? "text-green-600" : "text-red-600"
+          }`}>
+            {schedule.length > 0 ? "Success" : "Pending"}
+          </p>
+        </div>
+        {/* graphs */}
+        
+      </div>
+
+      {/* Schedule Table */}
+      {schedule.length > 0 && (
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4">
+            Optimized Schedule Preview
+          </h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-purple-100 text-left">
+                  <th className="p-3">Bus ID</th>
+                  <th className="p-3">Trip ID</th>
+                  <th className="p-3">Route ID</th>
+                  <th className="p-3">Planned Start</th>
+                  <th className="p-3">Planned End</th>
+                  <th className="p-3">Driver ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {schedule.map((row, idx) => (
+                  <tr
+                    key={idx}
+                    className="border-b hover:bg-purple-50 transition"
+                  >
+                    <td className="p-3">{row.bus_id}</td>
+                    <td className="p-3">{row.trip_id}</td>
+                    <td className="p-3">{row.route_id}</td>
+                    <td className="p-3">{row.planned_start}</td>
+                    <td className="p-3">{row.planned_end}</td>
+                    <td className="p-3">{row.assigned_driver_id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
