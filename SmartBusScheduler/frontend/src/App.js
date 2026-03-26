@@ -12,6 +12,8 @@ import Unauthorized from "./pages/Unauthorized";
 import StopsDataFeed from "./pages/StopsDataFeed";
 import RoutesDataFeed from "./pages/RoutesDataFeed";
 import BusDataFeed from "./pages/BusDataFeed";
+import ConductorDashboard from "./pages/conductor";
+import AdminScheduleManagement from "./pages/schedule";
 
 function App() {
   const location = useLocation();
@@ -35,6 +37,18 @@ function App() {
             path="/customer"
             element={
                 <CustomerDashboard />
+            }
+          />
+          <Route
+            path="/conductor/dashboard"
+            element={
+                <ConductorDashboard />
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+                <AdminScheduleManagement />
             }
           />
 

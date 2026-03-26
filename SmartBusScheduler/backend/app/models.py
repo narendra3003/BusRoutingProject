@@ -1,167 +1,339 @@
 # models.py
 from sqlalchemy import (
-    Column, Integer, String, Float, Date, Time, Text, ForeignKey,
-    ARRAY, DECIMAL, TIMESTAMP
+    Column, Integer, String, Float, Date, Time, Text, ForeignKey, Boolean, DateTime, Enum, UniqueConstraint, func
 )
+from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import relationship
 from .database import Base
-
-# -----------------
-# USERS
-# -----------------
-class User(Base):
-    __tablename__ = "users"
-
-    user_id = Column(Integer, primary_key=True, index=True)
-    role = Column(String, nullable=False)  # customer/admin/driver/uploader
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False, index=True)
-    password_hash = Column(String, nullable=False)
-
-    # relationships
-    services_as_driver = relationship("Service", back_populates="driver", foreign_keys="Service.driver_id")
-    services_as_conductor = relationship("Service", back_populates="conductor", foreign_keys="Service.conductor_id")
+import enum
 
 
-# -----------------
+# =========================
+# ENUM TYPES
+# =========================
+
+class UserRole(str, enum.Enum):
+    admin = "admin"
+    driver = "driver"
+    crew = "crew"
+
+
+class DriverStatus(str, enum.Enum):
+    active = "active"
+    inactive = "inactive"
+
+
+class BusStatus(str, enum.Enum):
+    active = "active"
+    maintenance = "maintenance"
+    inactive = "inactive"
+
+
+class LeaveStatus(str, enum.Enum):
+    pending = "pending"
+    granted = "granted"
+    rejected = "rejected"
+
+
+class TripStatus(str, enum.Enum):
+    scheduled = "scheduled"
+    completed = "completed"
+    cancelled = "cancelled"
+    delayed = "delayed"
+
+
+class NotificationType(str, enum.Enum):
+    override = "override"
+    leave = "leave"
+    system = "system"
+
+
+class StopType(str, enum.Enum):
+    stop = "stop"
+    terminal = "terminal"
+    depot = "depot"
+
+# =========================
+# POSTGRES ENUM OBJECTS
+# =========================
+
+user_role_enum = ENUM(UserRole, name="user_role", create_type=False)
+driver_status_enum = ENUM(DriverStatus, name="driver_status", create_type=False)
+bus_status_enum = ENUM(BusStatus, name="bus_status", create_type=False)
+leave_status_enum = ENUM(LeaveStatus, name="leave_status", create_type=False)
+trip_status_enum = ENUM(TripStatus, name="trip_status", create_type=False)
+notification_type_enum = ENUM(NotificationType, name="notification_type", create_type=False)
+stop_type_enum = ENUM(StopType, name="stop_type", create_type=False)
+
+# =========================
 # STOPS
-# -----------------
+# =========================
+
 class Stop(Base):
     __tablename__ = "stops"
 
-    stop_id = Column(Integer, primary_key=True, index=True)
-    stop_code = Column(String, unique=True, nullable=True)
-    stop_name = Column(String, nullable=False)
-    stop_lat = Column(DECIMAL(9, 6), nullable=True)
-    stop_lon = Column(DECIMAL(9, 6), nullable=True)
+    id = Column(Integer, primary_key=True, index=True)
 
-    stop_times = relationship("StopTime", back_populates="stop")
-    observations = relationship("ObservationData", back_populates="stop")
+    name = Column(String, nullable=False)
+
+    lat = Column(Float, nullable=False)
+    lon = Column(Float, nullable=False)
+
+    type = Column(stop_type_enum, default=StopType.stop)
+
+    zone = Column(String)
+
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, server_default=func.now())
 
 
-# -----------------
+# =========================
 # ROUTES
-# -----------------
+# =========================
+
 class Route(Base):
     __tablename__ = "routes"
 
-    route_id = Column(Integer, primary_key=True, index=True)
-    route_code = Column(String, unique=True, nullable=False, index=True)
-    route_short_name = Column(String, nullable=True)
-    route_long_name = Column(String, nullable=True)
+    id = Column(String, primary_key=True)
 
-    stops = Column(ARRAY(Integer), nullable=True)      # ordered stop_ids
-    stop_time = Column(ARRAY(Integer), nullable=True)  # cumulative minutes
-    stop_dist = Column(ARRAY(Integer), nullable=True)
+    name = Column(String, nullable=False)
 
-    trips = relationship("Trip", back_populates="route", cascade="all, delete-orphan")
-    observations = relationship("ObservationData", back_populates="route")
+    start_stop_id = Column(Integer, ForeignKey("stops.id"), nullable=False)
+    end_stop_id = Column(Integer, ForeignKey("stops.id"), nullable=False)
 
+    distance_km = Column(Float)
 
+    is_active = Column(Boolean, default=True)
 
-# -----------------
-# SERVICE
-# -----------------
-class Service(Base):
-    __tablename__ = "service"
+    created_at = Column(DateTime, server_default=func.now())
 
-    service_id = Column(Integer, primary_key=True, index=True)
-    driver_id = Column(Integer, ForeignKey("users.user_id"))
-    conductor_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
-    notes = Column(Text, nullable=True)
-
-    driver = relationship("User", back_populates="services_as_driver", foreign_keys=[driver_id])
-    conductor = relationship("User", back_populates="services_as_conductor", foreign_keys=[conductor_id])
-    trips = relationship("Trip", back_populates="service")
+    start_stop = relationship("Stop", foreign_keys=[start_stop_id])
+    end_stop = relationship("Stop", foreign_keys=[end_stop_id])
 
 
-# -----------------
-# TRIPS
-# -----------------
-class Trip(Base):
-    __tablename__ = "trips"
+# =========================
+# ROUTE STOPS
+# =========================
 
-    trip_id = Column(Integer, primary_key=True, index=True)
-    route_id = Column(Integer, ForeignKey("routes.route_id"), nullable=False)
-    service_id = Column(Integer, ForeignKey("service.service_id"), nullable=True)
-    date = Column(Date, nullable=False)
+class RouteStop(Base):
+    __tablename__ = "route_stops"
 
-    route = relationship("Route", back_populates="trips")
-    service = relationship("Service", back_populates="trips")
-    stop_times = relationship("StopTime", back_populates="trip", cascade="all, delete-orphan")
-    overrides = relationship("AdminOverride", back_populates="trip", cascade="all, delete-orphan")
+    id = Column(Integer, primary_key=True)
 
+    route_id = Column(String, ForeignKey("routes.id", ondelete="CASCADE"))
+    stop_id = Column(Integer, ForeignKey("stops.id"))
 
-# -----------------
-# STOP TIMES
-# -----------------
-class StopTime(Base):
-    __tablename__ = "stop_times"
+    seq = Column(Integer, nullable=False)
 
-    id = Column(Integer, primary_key=True, index=True)
-    trip_id = Column(Integer, ForeignKey("trips.trip_id"), nullable=False)
-    stop_id = Column(Integer, ForeignKey("stops.stop_id"), nullable=False)
-    arrival_time = Column(Time, nullable=True)
-    departure_time = Column(Time, nullable=True)
-    boarding_in = Column(Integer, default=0)
-    boarding_out = Column(Integer, default=0)
+    dist_from_start = Column(Float)
 
-    trip = relationship("Trip", back_populates="stop_times")
-    stop = relationship("Stop", back_populates="stop_times")
+    time_from_start = Column(Integer)
+
+    __table_args__ = (
+        UniqueConstraint("route_id", "seq"),
+        UniqueConstraint("route_id", "stop_id"),
+    )
+
+    route = relationship("Route")
+    stop = relationship("Stop")
 
 
-# -----------------
-# ADMIN OVERRIDES
-# -----------------
-class AdminOverride(Base):
-    __tablename__ = "admin_overrides"
+# =========================
+# USERS
+# =========================
 
-    id = Column(Integer, primary_key=True, index=True)
-    trip_id = Column(Integer, ForeignKey("trips.trip_id"), nullable=False)
-    delta_minutes = Column(Integer, nullable=False)
-    effective_date = Column(Date, nullable=False)
-    reason = Column(Text, nullable=True)
+class User(Base):
+    __tablename__ = "users"
 
-    trip = relationship("Trip", back_populates="overrides")
+    id = Column(Integer, primary_key=True)
 
+    email = Column(String, unique=True, nullable=False)
 
-# -----------------
-# OBSERVATION DATA
-# -----------------
-class ObservationData(Base):
-    __tablename__ = "observation_data"
+    pass_hash = Column(String, nullable=False)
 
-    id = Column(Integer, primary_key=True, index=True)
-    bus_no = Column(String, nullable=True)
-    route_id = Column(Integer, ForeignKey("routes.route_id"), nullable=False)
-    stop_id = Column(Integer, ForeignKey("stops.stop_id"), nullable=False)
-    boarding_count = Column(Integer, nullable=False, default=0)
-    alighting_count = Column(Integer, nullable=False, default=0)
-    timestamp = Column(TIMESTAMP, nullable=False)
+    name = Column(String, nullable=False)
 
-    route = relationship("Route", back_populates="observations")
-    stop = relationship("Stop", back_populates="observations")
+    phone = Column(String)
+
+    role = Column(user_role_enum, nullable=False)
+
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+    last_login = Column(DateTime)
 
 
-# -----------------
-# BUS DATA
-# -----------------
-class BusData(Base):
-    __tablename__ = "bus_data"
+# =========================
+# DRIVERS
+# =========================
 
-    bus_id = Column(Integer, primary_key=True, index=True)
-    bus_no = Column(String(30), unique=True, nullable=False, index=True)
-    seating_capacity = Column(Integer, nullable=False)
-    max_capacity = Column(Integer, nullable=False)
+class Driver(Base):
+    __tablename__ = "drivers"
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+
+    license_no = Column(String, unique=True, nullable=False)
+
+    experience_years = Column(Integer, default=0)
+
+    joining_date = Column(Date)
+
+    status = Column(driver_status_enum, default=DriverStatus.active)
+
+    user = relationship("User")
 
 
-# -----------------
-# CREW DATA
-# -----------------
-class CrewData(Base):
-    __tablename__ = "crew_data"
+# =========================
+# BUSES
+# =========================
 
-    crew_id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=True)
-    post = Column(String, nullable=True)  # Driver / Conductor
-    experience = Column(Integer, nullable=True)
+class Bus(Base):
+    __tablename__ = "buses"
+
+    id = Column(Integer, primary_key=True)
+
+    code = Column(String, unique=True, nullable=False)
+
+    sitting_capacity = Column(Integer, nullable=False)
+
+    standing_capacity = Column(Integer, default=0)
+
+    status = Column(bus_status_enum, default=BusStatus.active)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+# =========================
+# DRIVER LEAVE
+# =========================
+
+class DriverLeave(Base):
+    __tablename__ = "driver_leave"
+
+    id = Column(Integer, primary_key=True)
+
+    driver_id = Column(Integer, ForeignKey("drivers.user_id", ondelete="CASCADE"))
+
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+
+    reason = Column(Text)
+
+    status = Column(
+    leave_status_enum, default=LeaveStatus.pending,
+    nullable=False
+)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+    driver = relationship("Driver")
+
+
+# =========================
+# SCHEDULE TRIPS
+# =========================
+
+class ScheduleTrip(Base):
+    __tablename__ = "schedule_trips"
+
+    id = Column(Integer, primary_key=True)
+
+    route_id = Column(String, ForeignKey("routes.id"), nullable=False)
+
+    trip_date = Column(Date, nullable=False)
+
+    start_time = Column(Time, nullable=False)
+
+    bus_id = Column(Integer, ForeignKey("buses.id"), nullable=False)
+
+    driver_id = Column(Integer, ForeignKey("drivers.user_id"), nullable=False)
+
+    status = Column(trip_status_enum, default=TripStatus.scheduled)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("route_id", "trip_date", "start_time"),
+    )
+
+    route = relationship("Route")
+    bus = relationship("Bus")
+    driver = relationship("Driver")
+
+
+# =========================
+# OVERRIDES
+# =========================
+
+class Override(Base):
+    __tablename__ = "overrides"
+
+    id = Column(Integer, primary_key=True)
+
+    trip_id = Column(Integer, ForeignKey("schedule_trips.id", ondelete="CASCADE"))
+
+    old_driver_id = Column(Integer)
+    new_driver_id = Column(Integer)
+
+    old_bus_id = Column(Integer)
+    new_bus_id = Column(Integer)
+
+    reason = Column(Text)
+
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+
+    created_at = Column(DateTime, server_default=func.now())
+
+    trip = relationship("ScheduleTrip")
+    creator = relationship("User")
+
+
+# =========================
+# NOTIFICATIONS
+# =========================
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True)
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+
+    title = Column(Text, nullable=False)
+
+    message = Column(Text, nullable=False)
+
+    type = Column(notification_type_enum, default=NotificationType.system)
+
+    is_read = Column(Boolean, default=False)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("User")
+
+
+# =========================
+# TRIP LIVE STATUS
+# =========================
+
+class TripLiveStatus(Base):
+    __tablename__ = "trip_live_status"
+
+    trip_id = Column(Integer, ForeignKey("schedule_trips.id", ondelete="CASCADE"), primary_key=True)
+
+    current_stop_id = Column(Integer, ForeignKey("stops.id"))
+
+    delay_minutes = Column(Integer, default=0)
+
+    last_lat = Column(Float)
+    last_lon = Column(Float)
+
+    last_updated = Column(DateTime, server_default=func.now())
+
+    trip = relationship("ScheduleTrip")
+    stop = relationship("Stop")
+

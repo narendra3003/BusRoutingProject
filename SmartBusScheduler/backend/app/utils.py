@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status, Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, OAuth2PasswordBearer, HTTPBearer
 from jose import jwt, JWTError
 import os
 from datetime import datetime, timedelta
@@ -10,7 +10,7 @@ SECRET_KEY = os.getenv("JWT_SECRET", "SecretKey")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = HTTPBearer()  # Using HTTPBearer for token extraction from Authorization header
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -66,19 +66,25 @@ def decode_access_token(token: str):
 #     except Exception:
 #         pass
 #     return {"user_id": user_id, "role": role}
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
+        detail="Invalid or missing credentials",
     )
+
+    if credentials.scheme != "Bearer":
+        raise credentials_exception
+
+    token = credentials.credentials  # 🔥 actual JWT string
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
-        user_id: str = payload.get("sub")
-        role: str = payload.get("role")
-        name: str = payload.get("name")
+        user_id = payload.get("user_id")
+        role = payload.get("role")
+        name = payload.get("name")
 
         if user_id is None:
             raise credentials_exception

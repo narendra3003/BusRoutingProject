@@ -1,5 +1,21 @@
 from fastapi import FastAPI
-from .routers import admin, customer, driver, uploader, auth
+# from .routers import admin, customer, driver, uploader, auth
+from .routers import (public_routes, 
+                      auth, 
+                      public_stops, 
+                      public_schedule, 
+                      notifications, 
+                      driver, 
+                      driver_profile, 
+                      driver_trips, 
+                      driver_leaves,
+                      admin_buses,
+                      admin_drivers,
+                      admin_override,
+                      admin_schedule,
+                        admin_routes,
+                        admin_stops
+)
 from .database import Base, engine
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,11 +41,27 @@ def on_startup():
 # - Admin under '/admin'
 # - Drivers under '/drivers'
 # - Auth under '/auth'
-app.include_router(customer.router, tags=["Customer"])
-app.include_router(uploader.router, tags=["Uploader"])
-app.include_router(admin.router, prefix="/admin", tags=["Admin"])
-app.include_router(auth.router, prefix="/auth", tags=["Auth"])
+# app.include_router(customer.router, tags=["Customer"])
+
+app.include_router(auth.router, prefix="/auth", tags=["Auth Routes"])
+
+app.include_router(public_routes.router, prefix="/public", tags=["Public Routes"])
+app.include_router(public_schedule.router, prefix="/schedule", tags=["Public Schedule"])
+app.include_router(public_stops.router, prefix="/stops", tags=["Public Stops"])
+
 app.include_router(driver.router, prefix="/drivers", tags=["Driver"])
+app.include_router(driver_profile.router, prefix="/driver/profile", tags=["Driver Profile"])
+app.include_router(driver_trips.router, prefix="/driver/trips", tags=["Driver Trips"])
+app.include_router(driver_leaves.router, prefix="/driver/leaves", tags=["Driver Leaves"])
+
+app.include_router(admin_drivers.router, prefix="/admin/drivers", tags=["Admin Drivers"])
+app.include_router(admin_buses.router, prefix="/admin/buses", tags=["Admin Buses"])
+app.include_router(admin_routes.router, prefix="/admin/routes", tags=["Admin Routes"])
+app.include_router(admin_stops.router, prefix="/admin/stops", tags=["Admin Stops"])
+app.include_router(admin_schedule.router, prefix="/admin/schedule", tags=["Admin Schedule"])
+app.include_router(admin_override.router, prefix="/admin/dispatch/override", tags=["Admin Override"])
+
+app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 
 @app.get("/", tags=["Health"])
 def root():

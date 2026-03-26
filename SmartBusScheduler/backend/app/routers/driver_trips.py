@@ -1,3 +1,11 @@
+"""
+Docstring for SmartBusScheduler.backend.app.routers.driver_trips
+
+GET /driver/trips/today
+GET /driver/trips/date/{date}
+GET /driver/trips/{trip_id}
+GET /driver/calendar
+"""
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from datetime import date
@@ -5,7 +13,6 @@ from datetime import date
 from ..database import get_db
 from ..models import (
     User,
-    Driver,
     ScheduleTrip,
     Route,
     Bus,
@@ -38,35 +45,9 @@ def format_trip(trip: ScheduleTrip):
 
 
 # =========================
-# GET DRIVER PROFILE
-# =========================
-@router.get("/profile")
-def get_driver_profile(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if current_user["role"] != "driver":
-        raise HTTPException(status_code=403, detail="Only drivers allowed")
-
-    driver = db.query(Driver).filter(Driver.user_id == current_user["user_id"]).first()
-
-    if not driver:
-        raise HTTPException(status_code=404, detail="Driver not found")
-
-    return {
-        "user_id": driver.user_id,
-        "name": driver.user.name,
-        "email": driver.user.email,
-        "phone": driver.user.phone,
-        "license_no": driver.license_no,
-        "experience_years": driver.experience_years,
-        "status": driver.status.value
-    }
-
-# =========================
 # GET TODAY'S TRIPS
 # =========================
-@router.get("/trips/today")
+@router.get("/today")
 def get_today_trips(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -92,12 +73,13 @@ def get_today_trips(
 
 
 # =========================
-# GET ALL TRIPS (FILTER)
+# GET ALL TRIPS (FILTERABLE)
 # =========================
-@router.get("/trips")
+@router.get("/")
 def get_driver_trips(
     start_date: date | None = Query(None),
     end_date: date | None = Query(None),
+    status: TripStatus | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -115,7 +97,13 @@ def get_driver_trips(
     if end_date:
         query = query.filter(ScheduleTrip.trip_date <= end_date)
 
-    trips = query.order_by(ScheduleTrip.trip_date, ScheduleTrip.start_time).all()
+    if status:
+        query = query.filter(ScheduleTrip.status == status)
+
+    trips = query.order_by(
+        ScheduleTrip.trip_date,
+        ScheduleTrip.start_time
+    ).all()
 
     return {
         "total_trips": len(trips),
@@ -124,9 +112,35 @@ def get_driver_trips(
 
 
 # =========================
+# GET SINGLE TRIP DETAILS
+# =========================
+@router.get("/{trip_id}")
+def get_trip_details(
+    trip_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user["role"] != "driver":
+        raise HTTPException(status_code=403, detail="Only drivers allowed")
+
+    trip = db.query(ScheduleTrip).options(
+        joinedload(ScheduleTrip.route),
+        joinedload(ScheduleTrip.bus)
+    ).filter(ScheduleTrip.id == trip_id).first()
+
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    if trip.driver_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not your trip")
+
+    return format_trip(trip)
+
+
+# =========================
 # UPDATE TRIP STATUS
 # =========================
-@router.put("/trips/{trip_id}/status")
+@router.put("/{trip_id}/status")
 def update_trip_status(
     trip_id: int,
     status: TripStatus,
@@ -136,13 +150,28 @@ def update_trip_status(
     if current_user["role"] != "driver":
         raise HTTPException(status_code=403, detail="Only drivers allowed")
 
-    trip = db.query(ScheduleTrip).filter(ScheduleTrip.id == trip_id).first()
+    trip = db.query(ScheduleTrip).filter(
+        ScheduleTrip.id == trip_id
+    ).first()
 
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
 
     if trip.driver_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Not your trip")
+
+    # Optional: enforce flow
+    allowed_transitions = {
+        "scheduled": ["delayed", "completed"],
+        "delayed": ["completed"],
+        "completed": []
+    }
+
+    if status.value not in allowed_transitions[trip.status.value]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status transition from {trip.status.value} to {status.value}"
+        )
 
     trip.status = status
     db.commit()
@@ -157,7 +186,7 @@ def update_trip_status(
 # =========================
 # GET LIVE STATUS
 # =========================
-@router.get("/trips/{trip_id}/live")
+@router.get("/{trip_id}/live")
 def get_live_status(
     trip_id: int,
     db: Session = Depends(get_db),
@@ -166,7 +195,9 @@ def get_live_status(
     if current_user["role"] != "driver":
         raise HTTPException(status_code=403, detail="Only drivers allowed")
 
-    trip = db.query(ScheduleTrip).filter(ScheduleTrip.id == trip_id).first()
+    trip = db.query(ScheduleTrip).filter(
+        ScheduleTrip.id == trip_id
+    ).first()
 
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -183,11 +214,45 @@ def get_live_status(
 
     return {
         "trip_id": trip_id,
-        "current_stop_id": live.current_stop_id,
         "delay_minutes": live.delay_minutes,
+        "current_stop_id": live.current_stop_id,
         "last_location": {
             "lat": live.last_lat,
             "lon": live.last_lon
         },
         "last_updated": live.last_updated
+    }
+
+
+# =========================
+# START TRIP (OPTIONAL)
+# =========================
+@router.post("/{trip_id}/start")
+def start_trip(
+    trip_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user["role"] != "driver":
+        raise HTTPException(status_code=403, detail="Only drivers allowed")
+
+    trip = db.query(ScheduleTrip).filter(
+        ScheduleTrip.id == trip_id
+    ).first()
+
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    if trip.driver_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not your trip")
+
+    if trip.status != TripStatus.scheduled:
+        raise HTTPException(status_code=400, detail="Trip already started or completed")
+
+    trip.status = TripStatus.delayed  # or "in_progress" if you add new enum
+    db.commit()
+
+    return {
+        "status": "started",
+        "trip_id": trip_id
     }
