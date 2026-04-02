@@ -2,82 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { MapContainer, TileLayer, Polyline, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-// ─── Data ────────────────────────────────────────────────────────────────────
-
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-const ROUTES = [
-  {
-    id: "101", name: "Green Express", color: "#1d6ef5",
-    from: "Connaught Place", to: "Shastri Nagar",
-    stops: ["Connaught Place", "Karol Bagh", "Patel Nagar", "Shastri Nagar"],
-    coords: [[28.6315,77.2167],[28.6512,77.1904],[28.6519,77.1711],[28.6694,77.1916]],
-    liveStop: "Patel Nagar",
-    etaFromLive: { "Shastri Nagar": 8 },
-    stopOffsets: [0, 7, 14, 20],
-    timetable: {
-      weekday: ["06:00","06:08","06:16","06:24","06:32","06:40","07:00","07:08","07:16","07:24","07:32","07:40","08:00","08:08","08:16","08:24","08:32","08:40","09:00","09:15","09:30","09:45","10:00","10:20","10:40","11:00","11:20","11:40","12:00","12:20","12:40","13:00","13:20","13:40","14:00","14:20","14:40","15:00","15:20","15:40","16:00","16:08","16:16","16:24","16:32","16:40","17:00","17:08","17:16","17:24","17:32","17:40","18:00","18:15","18:30","18:45","19:00","19:20","19:40","20:00","20:30","21:00","21:30","22:00"],
-      sat:     ["07:00","07:20","07:40","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00","20:30","21:00","21:30","22:00"],
-      sun:     ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00","20:30","21:00","21:30","22:00"],
-    },
-  },
-  {
-    id: "202", name: "City Rider", color: "#2563eb",
-    from: "India Gate", to: "Hauz Khas",
-    stops: ["India Gate", "Khan Market", "AIIMS", "Hauz Khas"],
-    coords: [[28.6129,77.2295],[28.6005,77.2273],[28.5672,77.2100],[28.5494,77.2017]],
-    liveStop: "AIIMS",
-    etaFromLive: { "Hauz Khas": 10 },
-    stopOffsets: [0, 8, 16, 24],
-    timetable: {
-      weekday: ["06:15","06:30","06:45","07:00","07:15","07:30","07:45","08:00","08:15","08:30","08:45","09:00","09:20","09:40","10:00","10:20","10:40","11:00","11:20","11:40","12:00","12:20","12:40","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:15","16:30","16:45","17:00","17:15","17:30","17:45","18:00","18:20","18:40","19:00","19:30","20:00","20:30","21:00","21:30","22:00"],
-      sat:     ["07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"],
-      sun:     ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"],
-    },
-  },
-  {
-    id: "303", name: "Metro Link", color: "#3b82f6",
-    from: "Kashmere Gate", to: "Azadpur",
-    stops: ["Kashmere Gate", "Civil Lines", "Model Town", "Azadpur"],
-    coords: [[28.6673,77.2300],[28.6822,77.2287],[28.7073,77.1925],[28.7090,77.1772]],
-    liveStop: "Model Town",
-    etaFromLive: { "Azadpur": 7 },
-    stopOffsets: [0, 6, 12, 18],
-    timetable: {
-      weekday: ["06:30","06:45","07:00","07:15","07:30","07:45","08:00","08:15","08:30","08:45","09:00","09:20","09:40","10:00","10:20","10:40","11:00","11:20","11:40","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:15","16:30","16:45","17:00","17:15","17:30","17:45","18:00","18:20","18:40","19:00","19:30","20:00","20:30","21:00","22:00"],
-      sat:     ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"],
-      sun:     ["09:00","09:30","10:00","10:30","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"],
-    },
-  },
-  {
-    id: "404", name: "Rapid Route", color: "#1e40af",
-    from: "Lajpat Nagar", to: "Govindpuri",
-    stops: ["Lajpat Nagar", "Nehru Place", "Kalkaji", "Govindpuri"],
-    coords: [[28.5623,77.2433],[28.5499,77.2522],[28.5389,77.2586],[28.5301,77.2619]],
-    liveStop: "Kalkaji",
-    etaFromLive: { "Govindpuri": 8 },
-    stopOffsets: [0, 5, 10, 16],
-    timetable: {
-      weekday: ["05:45","06:00","06:10","06:20","06:30","06:40","06:50","07:00","07:10","07:20","07:30","07:40","07:50","08:00","08:10","08:20","08:30","08:40","08:50","09:00","09:15","09:30","09:45","10:00","10:20","10:40","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:10","16:20","16:30","16:40","16:50","17:00","17:10","17:20","17:30","17:40","17:50","18:00","18:15","18:30","18:45","19:00","19:30","20:00","20:30","21:00","21:30","22:00","22:30"],
-      sat:     ["07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"],
-      sun:     ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"],
-    },
-  },
-  {
-    id: "505", name: "Capital Cruiser", color: "#60a5fa",
-    from: "Rajouri Garden", to: "Shalimar Bagh",
-    stops: ["Rajouri Garden", "Punjabi Bagh", "Ashok Vihar", "Shalimar Bagh"],
-    coords: [[28.6412,77.1197],[28.6663,77.1347],[28.6826,77.1652],[28.7067,77.1709]],
-    liveStop: "Ashok Vihar",
-    etaFromLive: { "Shalimar Bagh": 9 },
-    stopOffsets: [0, 8, 16, 23],
-    timetable: {
-      weekday: ["06:00","06:20","06:40","07:00","07:20","07:40","08:00","08:20","08:40","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:20","16:40","17:00","17:20","17:40","18:00","18:20","18:40","19:00","19:30","20:00","20:30","21:00","21:30","22:00"],
-      sat:     ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"],
-      sun:     ["09:00","09:30","10:00","10:30","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"],
-    },
-  },
-];
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function addMinutes(time, mins) {
   const [h, m] = time.split(":").map(Number);
@@ -90,13 +15,6 @@ function getDayKey(dayLabel) {
   if (dayLabel === "Sun") return "sun";
   return "weekday";
 }
-
-const ALL_STOPS = [...new Set(ROUTES.flatMap(r => r.stops))];
-const SUGGESTIONS = [
-  ...ROUTES.map(r => ({ type: "route", id: r.id, label: `Route ${r.id} – ${r.from} to ${r.to}`, sub: "", data: r })),
-  ...ALL_STOPS.map(s => ({ type: "stop", id: s, label: s, sub: `Routes: ${ROUTES.filter(r => r.stops.includes(s)).map(r => r.id).join(", ")}` })),
-];
-const QUICK_CHIPS = ["101", "AIIMS", "Kashmere Gate", "404"];
 
 function FitBounds({ coords }) {
   const map = useMap();
@@ -264,11 +182,12 @@ function ScheduleModal({ route, onClose }) {
   const today = new Date().getDay();
   const dayLabels = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const initDay = today === 0 ? 6 : today - 1;
+
   const [selectedDay, setSelectedDay] = useState(dayLabels[initDay] || "Mon");
   const [direction, setDirection] = useState("up");
 
   const dayKey = getDayKey(selectedDay);
-  const baseTimes = route.timetable[dayKey] || [];
+  const baseTimes = route?.timetable?.[dayKey] || [];
 
   const stops   = direction === "up" ? [...route.stops]       : [...route.stops].reverse();
   const offsets = direction === "up" ? [...route.stopOffsets] : [...route.stopOffsets].map(o => route.stopOffsets[route.stopOffsets.length - 1] - o).reverse();
@@ -289,7 +208,7 @@ function ScheduleModal({ route, onClose }) {
               <div>
                 <div className="modal-route-name">{route.name}</div>
                 <div className="modal-route-path">
-                  {direction === "up" ? `${route.from} → ${route.to}` : `${route.to} → ${route.from}`}
+                  {direction === "up" ? `${route.from_stop} → ${route.to_stop}` : `${route.to_stop} → ${route.from_stop}`}
                 </div>
               </div>
             </div>
@@ -351,316 +270,346 @@ function ScheduleModal({ route, onClose }) {
   );
 }
 
-function StopTimeline({ route, searchedStop, selectedStop, onStopClick, onScheduleClick }) {
-  const liveIdx = route.stops.indexOf(route.liveStop);
-  return (
-    <div>
-      <div className="route-header-card">
-        <div className="rhc-top">
-          <div className="rhc-badge">{route.id}</div>
-          <div className="rhc-info">
-            <div className="rhc-name">{route.name}</div>
-            <div className="rhc-path">{route.from} → {route.to}</div>
-          </div>
-        </div>
-        <div className="rhc-meta">
-          <span className="rhc-tag">{route.stops.length} stops</span>
-          <button className="sched-btn" onClick={onScheduleClick}>View Schedule →</button>
-        </div>
-      </div>
-      <div className="stop-timeline">
-        {route.stops.map((stop, i) => {
-          const isLive     = i === liveIdx;
-          const isNext     = i === liveIdx + 1;
-          const isPassed   = i < liveIdx;
-          const isSelected = stop === selectedStop;
-          const isSearched = stop === searchedStop;
-          const eta        = isNext ? (route.etaFromLive?.[stop] ?? null) : null;
-          let cls = "stl-row";
-          if (isSelected || isSearched) cls += " selected";
-          else if (isLive)   cls += " live";
-          else if (isNext)   cls += " next";
-          else if (isPassed) cls += " passed";
-          return (
-            <div key={stop} className={cls} onClick={() => onStopClick(stop)}>
-              <div className="stl-track"><div className="stl-dot" /></div>
-              <div className="stl-content">
-                <div className="stl-label-row">
-                  <span className="stl-name">{stop}</span>
-                  {isLive && <span className="stl-badge current">Current Stop</span>}
-                  {isNext && !isLive && <span className="stl-badge next">Next Stop</span>}
-                </div>
-                {isLive && <div className="stl-sub">Bus is here now</div>}
-                {isNext && eta !== null && <div className="stl-sub">ETA ~{eta} min</div>}
-                {isPassed && <div className="stl-sub">Already passed</div>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
 
 export default function CustomerPage() {
+
+  // 🔥 STATE
+  const [routes, setRoutes] = useState([]);
+  const [stops, setStops] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [activeRoute, setActiveRoute] = useState(null);
   const [selectedStop, setSelectedStop] = useState(null);
-  const [activeTabRouteId, setActiveTabRouteId] = useState(null);
   const [scheduleRoute, setScheduleRoute] = useState(null);
+
   const inputRef = useRef(null);
-  const q = query.toLowerCase().trim();
 
-  const filtered = q
-    ? SUGGESTIONS.filter(s =>
-        s.label.toLowerCase().includes(q) ||
-        (s.type === "route" && s.data?.stops?.some(st => st.toLowerCase().includes(q)))
-      ).slice(0, 12)
-    : SUGGESTIONS.slice(0, 10);
+  // ─── API CALLS ─────────────────────────────────────────────
 
-  const routeSuggs = filtered.filter(s => s.type === "route");
-  const stopSuggs  = filtered.filter(s => s.type === "stop");
+  // 1. INITIAL ROUTES
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/public/custRoutes");
+        const data = await res.json();
+        setRoutes(Array.isArray(data) ? data : []);
+      } catch {
+        setRoutes([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRoutes();
+  }, []);
 
-  const searchedStopName = (() => {
-    if (!q) return null;
-    return ALL_STOPS.find(s => s.toLowerCase() === q || s.toLowerCase().includes(q)) || null;
-  })();
+  // 2. STOPS API
+  useEffect(() => {
+    const fetchStops = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/stops");
+        const data = await res.json();
+        setStops(Array.isArray(data) ? data : []);
+      } catch {
+        setStops([]);
+      }
+    };
+    fetchStops();
+  }, []);
 
-  const routesForStop = searchedStopName && !activeRoute
-    ? ROUTES.filter(r => r.stops.includes(searchedStopName))
-    : [];
+  // 3. FETCH ROUTE BY ID
+  const fetchRouteById = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:8000/public/cust_routes/${id}`);
+      const data = await res.json();
 
-  const timelineRoute = (() => {
-    if (activeRoute) return ROUTES.find(r => r.id === activeRoute) || null;
-    if (routesForStop.length > 0) {
-      const tabId = activeTabRouteId || routesForStop[0].id;
-      return ROUTES.find(r => r.id === tabId) || routesForStop[0];
-    }
-    return null;
-  })();
+      // replace or add route
+      setRoutes(prev => {
+        const exists = prev.find(r => r.id === id);
+        if (exists) {
+          return prev.map(r => r.id === id ? data : r);
+        }
+        return [...prev, data];
+      });
 
-  const mapRouteData = timelineRoute;
-  const showTimeline  = !!timelineRoute;
-  const showRouteTabs = routesForStop.length > 1 && !activeRoute;
-
-  const displayRoutes = q
-    ? ROUTES.filter(r =>
-        r.id.toLowerCase().includes(q) ||
-        r.name.toLowerCase().includes(q) ||
-        r.from.toLowerCase().includes(q) ||
-        r.to.toLowerCase().includes(q) ||
-        r.stops.some(s => s.toLowerCase().includes(q))
-      )
-    : ROUTES;
-
-  const handleSelect = (sug) => {
-    setFocused(false);
-    setSelectedStop(null);
-    if (sug.type === "route") {
-      setQuery(`Route ${sug.id} – ${sug.data.from} to ${sug.data.to}`);
-      setActiveRoute(sug.id);
-      setActiveTabRouteId(sug.id);
-    } else {
-      setQuery(sug.label);
-      setActiveRoute(null);
-      const r = ROUTES.filter(r => r.stops.includes(sug.label));
-      setActiveTabRouteId(r[0]?.id || null);
+      return data;
+    } catch {
+      return null;
     }
   };
 
-  const handleChip = (chip) => {
-    setQuery(chip); setActiveRoute(null); setSelectedStop(null); setActiveTabRouteId(null);
-    inputRef.current?.focus();
-  };
+  // 4. ROUTES BY STOP
+  // API: GET /cust-routes-by-stop?stop_id=ID
+  const fetchRoutesByStop = async (stopId) => {
+  try {
+    const res = await fetch(`http://localhost:8000/public/cust-routes-by-stop?stop_id=${stopId}`);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+};
 
-  const handleFind = () => {
-    setFocused(false);
-    if (displayRoutes.length === 1) { setActiveRoute(displayRoutes[0].id); setActiveTabRouteId(displayRoutes[0].id); }
-  };
+  // ─── DERIVED ───────────────────────────────────────────────
 
-  const handleStopClick = (stopName) => setSelectedStop(prev => prev === stopName ? null : stopName);
+  const ALL_STOPS = stops.length
+  ? stops.map(s => ({
+      id: s.id,
+      name: s.name
+    }))
+  : [];
 
-  const handleCardClick = (routeId) => {
-    setActiveRoute(prev => { const next = prev === routeId ? null : routeId; setActiveTabRouteId(next); return next; });
-    setSelectedStop(null);
-  };
+  const SUGGESTIONS = [
+    ...routes.map(r => ({
+      type: "route",
+      id: r.id,
+      label: `Route ${r.id} – ${r.from_stop} to ${r.to_stop}`
+    })),
+    ...ALL_STOPS.map(s => ({
+      type: "stop",
+      id: s.id,
+      label: s.name
+    }))
+  ];
 
-  const clearSearch = () => { setQuery(""); setActiveRoute(null); setSelectedStop(null); setActiveTabRouteId(null); };
+  const q = query.toLowerCase();
 
-  return (
-    <>
-      <style>{CSS}</style>
-
-      {scheduleRoute && <ScheduleModal route={scheduleRoute} onClose={() => setScheduleRoute(null)} />}
-
-      <div className="hero">
-        <h1 className="hero-title">Find your <span className="highlight">route</span>,<br />reach on time.</h1>
-        <p className="hero-sub">Search any bus number, route name, or stop across Delhi</p>
-        <div className="search-outer">
-          <div className="search-bar">
-            <input
-              ref={inputRef} className="search-input"
-              placeholder="Search route number / stop name…"
-              value={query}
-              onChange={e => { setQuery(e.target.value); setActiveRoute(null); setSelectedStop(null); setActiveTabRouteId(null); }}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setTimeout(() => setFocused(false), 180)}
-              onKeyDown={e => e.key === "Enter" && handleFind()}
-            />
-            {query && (
-              <button style={{ background:"none", border:"none", cursor:"pointer", color:"#aab0bc", fontSize:18, padding:"0 8px" }} onClick={clearSearch}>×</button>
-            )}
-            <button className="find-btn" onClick={handleFind}>Find Route →</button>
-          </div>
-          {focused && (
-            <div className="dropdown">
-              {filtered.length === 0 && <div className="dd-no-result">No results for "{query}"</div>}
-              {routeSuggs.length > 0 && (
-                <div className="dd-section">
-                  <div className="dd-section-label">Routes</div>
-                  {routeSuggs.map(s => (
-                    <div key={s.id} className="dd-item" onMouseDown={() => handleSelect(s)}>
-                      <div className="dd-text-main">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {stopSuggs.length > 0 && (
-                <div className="dd-section">
-                  <div className="dd-section-label">Stops</div>
-                  {stopSuggs.map(s => (
-                    <div key={s.id} className="dd-item" onMouseDown={() => handleSelect(s)}>
-                      <div className="dd-text-main">{s.label}</div>
-                      <div className="dd-text-sub">{s.sub}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="chips-row">
-          {QUICK_CHIPS.map(c => <div key={c} className="chip" onClick={() => handleChip(c)}>{c}</div>)}
-        </div>
-      </div>
-
-      <div className="body-layout">
-        <div className="left-panel">
-          {showTimeline ? (
-            <>
-              <div className="panel-heading">
-                {searchedStopName && !activeRoute ? `Routes via ${searchedStopName}` : "Route Details"}
-              </div>
-              {showRouteTabs && (
-                <div className="route-tabs">
-                  {routesForStop.map(r => (
-                    <button key={r.id} className={`rtab ${(activeTabRouteId || routesForStop[0].id) === r.id ? "active" : ""}`}
-                      onClick={() => setActiveTabRouteId(r.id)}>{r.id}</button>
-                  ))}
-                </div>
-              )}
-              <StopTimeline
-                route={timelineRoute}
-                searchedStop={searchedStopName}
-                selectedStop={selectedStop}
-                onStopClick={handleStopClick}
-                onScheduleClick={() => setScheduleRoute(timelineRoute)}
-              />
-            </>
-          ) : (
-            <>
-              <div className="panel-heading">
-                {q ? `Results for "${query}"` : "All Routes"} — {displayRoutes.length} found
-              </div>
-              {displayRoutes.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-text">No routes found</div>
-                  <div className="empty-sub">Try a stop name or route number</div>
-                </div>
-              ) : displayRoutes.map(r => (
-                <div key={r.id}
-                  style={{ background:"#fff", borderRadius:14, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, boxShadow:"0 1px 4px rgba(0,0,0,0.07)", cursor:"pointer", border:`1.5px solid ${activeRoute === r.id ? "#d1d5db" : "#f0f2f5"}` }}
-                  onClick={() => handleCardClick(r.id)}
-                >
-                  <div style={{ width:42, height:42, borderRadius:10, background:"#f4f6f9", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    <span style={{ fontFamily:"'DM Mono',monospace", fontSize:12, fontWeight:600, color:"#6b7280" }}>{r.id}</span>
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#1a1c20" }}>{r.name}</div>
-                    <div style={{ fontSize:11, color:"#9ca3af", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.from} → {r.to}</div>
-                  </div>
-                  <div style={{ textAlign:"right", flexShrink:0 }}>
-                    <button
-                      style={{ background:"#f4f6f9", color:"#374151", border:"1px solid #e5e7eb", borderRadius:6, padding:"4px 10px", fontSize:10, fontWeight:700, fontFamily:"'Nunito',sans-serif", cursor:"pointer" }}
-                      onClick={e => { e.stopPropagation(); setScheduleRoute(r); }}
-                    >Schedule</button>
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-
-        <div className="map-panel">
-          <div className="map-card">
-            <div className="map-card-header">
-              <div>
-                <div className="map-card-title">
-                  {mapRouteData ? `Route ${mapRouteData.id} – ${mapRouteData.name}` : "Route Viewer"}
-                </div>
-                <div className="map-card-sub">
-                  {mapRouteData ? `${mapRouteData.from} → ${mapRouteData.to} · ${mapRouteData.stops.length} stops` : "Click any route to view it on the map"}
-                </div>
-              </div>
-              <div className="map-legend">
-                <div className="legend-item"><div className="legend-live" />Live bus</div>
-              </div>
-            </div>
-
-            {mapRouteData ? (
-              <MapContainer center={[28.6139, 77.209]} zoom={12} style={{ height:"500px", width:"100%" }}>
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
-                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                />
-                <FitBounds coords={mapRouteData.coords} />
-                <Polyline positions={mapRouteData.coords} pathOptions={{ color: mapRouteData.color, weight: 5, opacity: 0.85 }} />
-                {mapRouteData.coords.map((pos, i) => {
-                  const stopName   = mapRouteData.stops[i];
-                  const liveIdx    = mapRouteData.stops.indexOf(mapRouteData.liveStop);
-                  const isLive     = i === liveIdx;
-                  const isNext     = i === liveIdx + 1;
-                  const isSelected = stopName === selectedStop;
-                  const isSearched = stopName === searchedStopName;
-                  const stroke = isNext ? "#3b82f6" : isSelected || isSearched ? "#1d4ed8" : isLive ? "#1db954" : mapRouteData.color;
-                  const fill   = isNext ? "#fff" : isSelected || isSearched ? "#60a5fa" : isLive ? "#1db954" : "#fff";
-                  const radius = isLive ? 10 : isNext ? 9 : isSelected || isSearched ? 11 : 7;
-                  const eta    = isNext ? (mapRouteData.etaFromLive?.[stopName] ?? null) : null;
-                  return (
-                    <CircleMarker key={i} center={pos} radius={radius}
-                      pathOptions={{ color: stroke, fillColor: fill, fillOpacity: 1, weight: 2.5 }}
-                      eventHandlers={{ click: () => handleStopClick(stopName) }}
-                    >
-                      <Popup>
-                        <div className="popup-route">Route {mapRouteData.id} · {mapRouteData.name}</div>
-                        <div className="popup-stop">{stopName}</div>
-                        {isLive && <div><span className="popup-tag popup-tag-live">Current Stop</span></div>}
-                        {isNext && <div><span className="popup-tag popup-tag-next">Next Stop{eta ? ` · ETA ~${eta} min` : ""}</span></div>}
-                      </Popup>
-                    </CircleMarker>
-                  );
-                })}
-              </MapContainer>
-            ) : (
-              <div className="map-placeholder">
-                <div className="map-ph-text">No route selected</div>
-                <div className="map-ph-sub">Pick a route from the list to see it here</div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </>
+  const filtered = SUGGESTIONS.filter(s =>
+    s.label.toLowerCase().includes(q)
   );
+
+  // ─── HANDLERS ─────────────────────────────────────────────
+
+  const handleSelect = async (s) => {
+    if (s.type === "route") {
+      setActiveRoute(s.id);
+      const route = await fetchRouteById(s.id);
+      setScheduleRoute(route);
+    } else {
+      setQuery(s.label);        // show name in input
+      setSelectedStop(s.id);    // store id internally
+
+      const routesFromAPI = await fetchRoutesByStop(s.id);
+      setRoutes(routesFromAPI);
+    }
+  };
+
+  // ─── CURRENT ROUTE ─────────────────────────────────────────
+
+  const currentRoute = routes.find(r => r.id === activeRoute);
+
+  // ─── UI ───────────────────────────────────────────────────
+return (
+  <>
+    <style>{CSS}</style>
+
+    {scheduleRoute && (
+      <ScheduleModal
+        route={scheduleRoute}
+        onClose={() => setScheduleRoute(null)}
+      />
+    )}
+
+    {/* HERO */}
+    <div className="hero">
+      <h1 className="hero-title">
+        Find your <span className="highlight">route</span>,<br />reach on time.
+      </h1>
+      <p className="hero-sub">
+        Search any bus number, route name, or stop
+      </p>
+
+      <div className="search-outer">
+        <div className="search-bar">
+          <input
+            ref={inputRef}
+            className="search-input"
+            placeholder="Search route / stop..."
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 180)}
+          />
+
+          {query && (
+            <button
+              style={{ background:"none", border:"none", cursor:"pointer", padding:"0 10px" }}
+              onClick={() => setQuery("")}
+            >
+              ×
+            </button>
+          )}
+
+          <button className="find-btn">Find →</button>
+        </div>
+
+        {/* DROPDOWN */}
+        {focused && (
+          <div className="dropdown">
+            {filtered.length === 0 && (
+              <div className="dd-no-result">No results</div>
+            )}
+
+            {filtered.map(s => (
+              <div
+                key={s.id}
+                className="dd-item"
+                onMouseDown={() => handleSelect(s)}
+              >
+                <div className="dd-text-main">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* BODY */}
+    <div className="body-layout">
+
+      {/* LEFT PANEL */}
+      <div className="left-panel">
+        <div className="panel-heading">
+          {query ? `Results for "${query}"` : "All Routes"} — {routes.length}
+        </div>
+
+        {loading ? (
+          <div className="empty-state">
+            <div className="empty-text">Loading...</div>
+          </div>
+        ) : routes.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-text">No routes found</div>
+          </div>
+        ) : (
+          routes.map(r => (
+            <div
+              key={r.id}
+              className="route-header-card"
+              onClick={() => setActiveRoute(r.id)}
+              style={{
+                cursor: "pointer",
+                border:
+                  activeRoute === r.id
+                    ? "1.5px solid #d1d5db"
+                    : "1.5px solid #f0f2f5"
+              }}
+            >
+              <div className="rhc-top">
+                <div className="rhc-badge">{r.id}</div>
+                <div className="rhc-info">
+                  <div className="rhc-name">{r.name}</div>
+                  <div className="rhc-path">
+                    {r.from_stop} → {r.to_stop}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rhc-meta">
+                <span className="rhc-tag">
+                  {r.stops?.length || 0} stops
+                </span>
+
+                <button
+                  className="sched-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setScheduleRoute(r);
+                  }}
+                >
+                  View Schedule →
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* MAP PANEL */}
+      <div className="map-panel">
+        <div className="map-card">
+          <div className="map-card-header">
+            <div>
+              <div className="map-card-title">
+                {currentRoute
+                  ? `Route ${currentRoute.id} – ${currentRoute.name}`
+                  : "Route Viewer"}
+              </div>
+              <div className="map-card-sub">
+                {currentRoute
+                  ? `${currentRoute.from_stop} → ${currentRoute.to_stop}`
+                  : "Select a route to view"}
+              </div>
+            </div>
+          </div>
+
+          {currentRoute ? (
+            <MapContainer
+            center={currentRoute.coords?.[0] || [19.0760, 72.8777]}
+              zoom={12}
+            >
+              <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+
+              {currentRoute.coords && (
+                <>
+                  <FitBounds coords={currentRoute.coords} />
+                  <Polyline
+                    positions={currentRoute.coords}
+                    pathOptions={{
+                      color: currentRoute.color || "#2563eb",
+                      weight: 5
+                    }}
+                  />
+                </>
+              )}
+
+              {currentRoute.coords?.map((pos, i) => (
+                <CircleMarker
+                  key={i}
+                  center={pos}
+                  radius={7}
+                >
+                  <Popup>
+                    <div className="popup-stop">
+                      {currentRoute.stops?.[i]}
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              ))}
+            </MapContainer>
+          ) : (
+            <div className="map-placeholder">
+              <div className="map-ph-text">No route selected</div>
+              <div className="map-ph-sub">
+                Pick a route to see it on map
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+    </div>
+  </>
+);
 }
+
+/*
+──────────────────────────────
+📡 APIs USED
+──────────────────────────────
+
+GET /public/custRoutes
+→ Load all routes initially
+
+GET /routes/:id
+→ Fetch single route (on click)
+
+GET /stops
+→ Get all stops for suggestions
+
+GET /routes-by-stop?stop=
+→ Get routes passing a stop
+
+*/

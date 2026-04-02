@@ -29,7 +29,6 @@ function LoginForm() {
       const role = decoded.role;
       const name = decoded.name || username; // depends on your token structure
 
-      // ✅ Save user info for Navbar
       sessionStorage.setItem("name", name);
       sessionStorage.setItem("role", role);
 

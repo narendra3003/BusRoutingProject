@@ -1,16 +1,30 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
-from datetime import date
+from datetime import date, datetime, timedelta
 
 from ..database import get_db
 from ..models import (
     User,
     Driver,
     ScheduleTrip,
+    RouteStop,
+    Stop,
     Route,
     Bus,
     TripLiveStatus,
-    TripStatus
+    TripStatus,
+    Notification,
+    DriverLeave
+)
+from ..schemas import (
+    DriverScheduleResponse,
+    DriverTripResponse,
+    DriverStopResponse,
+    DriverNotificationsResponse,
+    DriverNotificationResponse,
+    DriverCalendarStatusResponse,
+    DriverSummaryResponse,
+    ScheduleResponse,
 )
 from ..utils import get_current_user
 
@@ -190,4 +204,170 @@ def get_live_status(
             "lon": live.last_lon
         },
         "last_updated": live.last_updated
+    }
+
+# =========================
+# GET SCHEDULE
+# =========================
+@router.get("/schedule", response_model=DriverScheduleResponse)
+def get_schedule(
+    date: date,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    trips = (
+        db.query(ScheduleTrip)
+        .filter(
+            ScheduleTrip.trip_date == date,
+            ScheduleTrip.driver_id == current_user["user_id"],
+        )
+        .all()
+    )
+
+    response_trips = []
+
+    for trip in trips:
+        route = db.query(Route).filter(Route.id == trip.route_id).first()
+        bus = db.query(Bus).filter(Bus.id == trip.bus_id).first()
+
+        route_stops = (
+            db.query(RouteStop)
+            .filter(RouteStop.route_id == route.id)
+            .order_by(RouteStop.seq)
+            .all()
+        )
+
+        stops = []
+        for rs in route_stops:
+            stop = db.query(Stop).filter(Stop.id == rs.stop_id).first()
+            stops.append(
+                DriverStopResponse(
+                    name=stop.name,
+                    coords=[stop.lat, stop.lon],
+                )
+            )
+
+        """
+            Instead of fixed 2 hours, you can later:
+            Use route_stops.time_from_start
+            Or store duration_minutes in route
+        """
+        end_time = (
+            datetime.combine(date, trip.start_time) + timedelta(hours=2)
+        ).time()
+
+        time=f"{trip.start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')}",
+        response_trips.append(
+            DriverTripResponse(
+                id=trip.id,
+                busNo=bus.code,
+                time=time,
+                busName=f"{route.name}",
+                status=trip.status.value,
+                stops=stops,
+            )
+        )
+
+    return {"trips": response_trips}
+
+@router.get("/notifications", response_model=DriverNotificationsResponse)
+def get_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    notes = (
+        db.query(Notification)
+        .filter(Notification.user_id == current_user["user_id"])
+        .order_by(Notification.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    return {
+        "notifications": [
+            DriverNotificationResponse(
+                id=n.id,
+                message=n.message,
+                created_at=n.created_at,
+                title=n.title
+            )
+            for n in notes
+        ]
+    }
+
+@router.get("/calendar-status", response_model=DriverCalendarStatusResponse)
+def get_calendar_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    status_map = {}
+
+    # Trips → assigned
+    trips = db.query(ScheduleTrip).filter(
+         # user user_id to get driver_id 
+        ScheduleTrip.driver_id == current_user["user_id"]
+    ).all()
+
+    for t in trips:
+        status_map[str(t.trip_date)] = "assigned"
+
+    # Leaves
+    leaves = db.query(DriverLeave).filter(
+        DriverLeave.driver_id == current_user["user_id"]
+    ).all()
+
+    for l in leaves:
+        current = l.start_date
+        while current <= l.end_date:
+            status_map[str(current)] = (
+                "leave-applied"
+                if l.status.value == "pending"
+                else "holiday"
+            )
+            current += timedelta(days=1)
+
+    return {"statusMap": status_map}
+from datetime import timedelta
+
+@router.get("/summary", response_model=DriverSummaryResponse)
+def get_summary(
+    date: date,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    trips = db.query(ScheduleTrip).filter(
+        ScheduleTrip.driver_id == current_user["user_id"],
+        ScheduleTrip.trip_date == date
+    ).all()
+
+    total_trips = len(trips)
+
+    # total hours (simple calculation)
+    total_hours = 0
+    shifts = set()
+    first_route = None
+
+    for trip in trips:
+        if trip.start_time:
+            end_time = datetime.combine(date, trip.start_time) + timedelta(hours=2)
+
+            duration = end_time - datetime.combine(date, trip.start_time)
+
+            total_hours += duration.total_seconds() / 3600
+
+        # Example shift logic
+        if trip.start_time.hour < 12:
+            shifts.add("Morning")
+        else:
+            shifts.add("Afternoon")
+
+        if not first_route:
+            route = db.query(Route).filter(Route.id == trip.route_id).first()
+            first_route = route.name if route else None
+
+    return {
+        "totalTrips": total_trips,
+        "totalHours": round(total_hours),
+        "shifts": list(shifts),
+        "firstRoute": first_route
     }

@@ -1,7 +1,91 @@
 from pydantic import BaseModel, EmailStr
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import date, time, datetime
 from enum import Enum
+
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import date
+
+
+# =========================
+# STOP
+# =========================
+class DriverStopResponse(BaseModel):
+    name: str
+    coords: List[float]
+
+
+# =========================
+# TRIP
+# =========================
+class DriverTripResponse(BaseModel):
+    id: int
+    busNo: str
+    time: str
+    busName: str
+    status: str
+    stops: List[DriverStopResponse]
+
+
+# =========================
+# SCHEDULE
+# =========================
+class DriverScheduleResponse(BaseModel):
+    trips: List[DriverTripResponse]
+
+
+# =========================
+# NOTIFICATIONS
+# =========================
+class DriverNotificationResponse(BaseModel):
+    id: int
+    message: str
+    title: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class DriverNotificationsResponse(BaseModel):
+    notifications: List[DriverNotificationResponse]
+
+
+# =========================
+# CALENDAR STATUS
+# =========================
+class DriverCalendarStatusResponse(BaseModel):
+    statusMap: dict
+
+
+# =========================
+# SUMMARY
+# =========================
+class DriverSummaryResponse(BaseModel):
+    totalTrips: int
+    totalHours: int
+    shifts: List[str]
+    firstRoute: Optional[str]
+
+class CustRouteResponse(BaseModel):
+    id: str
+    name: str
+
+    from_stop: Optional[str]
+    to_stop: Optional[str]
+
+    stops: List[str]
+    coords: List[List[float]]
+    stopOffsets: List[int]
+
+    liveStop: Optional[str]
+    etaFromLive: Dict[str, int]
+
+    timetable: Dict[str, List[str]]
+
+
+class CustStopResponse(BaseModel):
+    name: str
+    lat: float
+    lon: float
 
 # =========================
 # CREATE ROUTE

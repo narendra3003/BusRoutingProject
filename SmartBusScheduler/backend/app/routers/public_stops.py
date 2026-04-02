@@ -16,7 +16,7 @@ from ..database import get_db
 from ..models import Stop, RouteStop, Route
 from ..schemas import StopResponse, RouteResponse
 
-router = APIRouter(prefix="/stops", tags=["stops"])
+router = APIRouter()
 
 
 @router.get("/", response_model=List[StopResponse])

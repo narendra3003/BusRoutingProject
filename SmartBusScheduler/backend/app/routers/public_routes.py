@@ -8,11 +8,15 @@ GET /schedule/stop/{stop_id}
 GET /schedule/search?from_stop=&to_stop=
 
 """
-from fastapi import APIRouter, Depends, HTTPException
+
+from typing import List
+from ..schemas import CustRouteResponse
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session, joinedload
 from .. import models
-from ..models import Route, Stop, RouteStop
+from ..models import Route, Stop, RouteStop, ScheduleTrip, TripLiveStatus
 from ..database import get_db
+from collections import defaultdict
 # from ..utils import get_current_user
 
 router = APIRouter()
@@ -148,6 +152,183 @@ def get_route(
                 for r in routes
             ]
 
+# routers/routes.py
+@router.get("/custRoutes", response_model=List[CustRouteResponse])
+def list_routes(db: Session = Depends(get_db)):
 
-        # Summary:
-        # - Router prefixed with /routes and uses Pydantic response models (RouteResponse, RouteStopResponse).
+    routes = db.query(Route).filter(Route.is_active == True).all()
+
+    response = []
+
+    for r in routes:
+
+        route_stops = (
+            db.query(RouteStop, Stop)
+            .join(Stop, Stop.id == RouteStop.stop_id)
+            .filter(RouteStop.route_id == r.id)
+            .order_by(RouteStop.seq)
+            .all()
+        )
+
+        stops = []
+        coords = []
+        offsets = []
+
+        for rs, s in route_stops:
+            stops.append(s.name)
+            coords.append([s.lat, s.lon])
+            offsets.append(rs.time_from_start or 0)
+
+        start_stop = stops[0] if stops else None
+        end_stop = stops[-1] if stops else None
+
+        trips = db.query(ScheduleTrip).filter(ScheduleTrip.route_id == r.id).all()
+
+        timetable = defaultdict(list)
+
+        for t in trips:
+            day = t.trip_date.strftime("%a").lower()
+
+            if day == "sat":
+                key = "sat"
+            elif day == "sun":
+                key = "sun"
+            else:
+                key = "weekday"
+
+            timetable[key].append(t.start_time.strftime("%H:%M"))
+
+        live = (
+            db.query(TripLiveStatus)
+            .join(ScheduleTrip, ScheduleTrip.id == TripLiveStatus.trip_id)
+            .filter(ScheduleTrip.route_id == r.id)
+            .first()
+        )
+
+        live_stop = None
+        if live and live.current_stop_id:
+            stop_obj = db.query(Stop).get(live.current_stop_id)
+            if stop_obj:
+                live_stop = stop_obj.name
+
+        response.append(
+            CustRouteResponse(
+                id=r.id,
+                name=r.name,
+                from_stop=start_stop,
+                to_stop=end_stop,
+                stops=stops,
+                coords=coords,
+                stopOffsets=offsets,
+                liveStop=live_stop,
+                etaFromLive={},
+                timetable=timetable
+            )
+        )
+
+    return response
+
+@router.get("/cust_routes/{route_id}", response_model=CustRouteResponse)
+def cust_get_route(route_id: str, db: Session = Depends(get_db)):
+
+    r = db.query(Route).filter(Route.id == route_id).first()
+    if not r:
+        return None
+
+    route_stops = (
+        db.query(RouteStop, Stop)
+        .join(Stop, Stop.id == RouteStop.stop_id)
+        .filter(RouteStop.route_id == r.id)
+        .order_by(RouteStop.seq)
+        .all()
+    )
+
+    stops = []
+    coords = []
+    offsets = []
+
+    for rs, s in route_stops:
+        stops.append(s.name)
+        coords.append([s.lat, s.lon])
+        offsets.append(rs.time_from_start or 0)
+
+    start_stop = stops[0] if stops else None
+    end_stop = stops[-1] if stops else None
+
+    trips = db.query(ScheduleTrip).filter(ScheduleTrip.route_id == r.id).all()
+
+    timetable = defaultdict(list)
+
+    for t in trips:
+        day = t.trip_date.strftime("%a").lower()
+
+        if day == "sat":
+            key = "sat"
+        elif day == "sun":
+            key = "sun"
+        else:
+            key = "weekday"
+
+        timetable[key].append(t.start_time.strftime("%H:%M"))
+
+    return CustRouteResponse(
+        id=r.id,
+        name=r.name,
+        from_stop=start_stop,
+        to_stop=end_stop,
+        stops=stops,
+        coords=coords,
+        stopOffsets=offsets,
+        liveStop=None,
+        etaFromLive={},
+        timetable=timetable
+    )
+
+
+@router.get("/cust-routes-by-stop", response_model=List[CustRouteResponse])
+def cust_routes_by_stop(
+    stop_id: int,
+    db: Session = Depends(get_db)
+):
+
+    routes = (
+        db.query(Route)
+        .join(RouteStop, RouteStop.route_id == Route.id)
+        .filter(RouteStop.stop_id == stop_id)
+        .filter(Route.is_active == True)
+        .distinct()
+        .all()
+    )
+
+    response = []
+
+    for r in routes:
+
+        route_stops = (
+            db.query(RouteStop, Stop)
+            .join(Stop, Stop.id == RouteStop.stop_id)
+            .filter(RouteStop.route_id == r.id)
+            .order_by(RouteStop.seq)
+            .all()
+        )
+
+        stops = []
+        for rs, s in route_stops:
+            stops.append(s.name)
+
+        response.append(
+            CustRouteResponse(
+                id=r.id,
+                name=r.name,
+                from_stop=stops[0] if stops else None,
+                to_stop=stops[-1] if stops else None,
+                stops=stops,
+                coords=[],
+                stopOffsets=[],
+                liveStop=None,
+                etaFromLive={},
+                timetable={}
+            )
+        )
+
+    return response

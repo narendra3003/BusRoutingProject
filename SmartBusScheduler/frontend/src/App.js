@@ -39,7 +39,7 @@ function App() {
                 <CustomerDashboard />
             }
           />
-          <Route
+          {/* <Route
             path="/conductor/dashboard"
             element={
                 <ConductorDashboard />
@@ -51,6 +51,7 @@ function App() {
                 <AdminScheduleManagement />
             }
           />
+          */}
 
           <Route
             path="/admin"
@@ -69,7 +70,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Route for stops data feed */}
+          {/*
           <Route path="/stops-data-feed" 
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
@@ -87,7 +88,7 @@ function App() {
               <ProtectedRoute allowedRoles={["admin"]}>
                 <BusDataFeed />
               </ProtectedRoute>
-            }/>
+            }/> */}
           
         </Routes>
       </div>
