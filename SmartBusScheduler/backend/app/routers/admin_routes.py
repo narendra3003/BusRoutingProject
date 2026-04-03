@@ -123,6 +123,8 @@ def get_route(
 
     result = format_route(route)
 
+    result["long_name"] = f"{route.start_stop.name} to {route.end_stop.name}"
+
     if include_stops:
         from ..models import RouteStop
 
@@ -138,7 +140,7 @@ def get_route(
                 "name": s.stop.name,
                 "seq": s.seq,
                 "dist_from_start": float(s.dist_from_start) if s.dist_from_start else None,
-                "time_from_start": s.time_from_start
+                "time_from_start": s.time_from_start,
             }
             for s in stops
         ]
@@ -208,3 +210,43 @@ def delete_route(
         "status": "deleted",
         "route_id": route_id
     }
+
+"""
+    const res = await fetch(
+      `http://localhost:8000/routes/${routeId}/stops`
+    );
+
+    /*
+    RESPONSE:
+    [
+      { stop_id: 1, seq: 1, name: "A" },
+      { stop_id: 5, seq: 2, name: "B" }
+    ]
+    */
+"""
+@router.get("/{route_id}/stops")
+def get_route_stops(
+    route_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    check_admin(current_user)
+
+    from ..models import RouteStop
+
+    stops = db.query(RouteStop).options(
+        joinedload(RouteStop.stop)
+    ).filter(
+        RouteStop.route_id == route_id
+    ).order_by(RouteStop.seq).all()
+
+    return [
+        {
+            "stop_id": s.stop.id,
+            "name": s.stop.name,
+            "seq": s.seq,
+            "dist_from_start": float(s.dist_from_start) if s.dist_from_start else None,
+            "time_from_start": s.time_from_start,
+        }
+        for s in stops
+    ]

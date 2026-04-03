@@ -1,372 +1,346 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 
-function BusDataFeed() {
-  // -------------------------
-  // States
-  // -------------------------
-  const [csvFile, setCsvFile] = useState(null);
-  const [searchId, setSearchId] = useState("");
-  const [busData, setBusData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const fileInputRef = useRef(null);
+function BusesDataFeed() {
+  const [buses, setBuses] = useState([]);
+  const [selectedBus, setSelectedBus] = useState(null);
+  const [search, setSearch] = useState("");
 
   const [newBus, setNewBus] = useState({
-    bus_no: "",
-    passenger_seats: "",
-    passenger_cap: "",
+    code: "",
+    sitting_capacity: "",
+    standing_capacity: "",
+    status: "active",
   });
 
+  const [message, setMessage] = useState("");
+
   // -------------------------
-  // CSV Drag & Drop
+  // FETCH BUSES
   // -------------------------
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file && file.name.endsWith(".csv")) {
-      setCsvFile(file);
-      setMessage("");
-    } else {
-      setMessage("Only CSV files allowed.");
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && file.name.endsWith(".csv")) {
-      setCsvFile(file);
-      setMessage("");
-    } else {
-      setMessage("Only CSV files allowed.");
-    }
-  };
-
-  const handleDragOver = (e) => e.preventDefault();
-
-  const uploadCSV = async () => {
-    if (!csvFile) return setMessage("Please select a CSV file");
-
-    const formData = new FormData();
-    formData.append("file", csvFile);
-
+  const fetchBuses = async () => {
     try {
-      setLoading(true);
-
-      const res = await fetch("http://localhost:8000/admin/bus/upload-csv", {
-        method: "POST",
+      const res = await fetch("http://localhost:8000/admin/buses", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
         },
-        body: formData,
       });
 
-      if (!res.ok) throw new Error("CSV upload failed");
+      const data = await res.json();
+      setBuses(data);
 
-      setMessage("CSV uploaded successfully!");
-      setCsvFile(null);
-
-    } catch (err) {
-      setMessage(err.message);
-    } finally {
-      setLoading(false);
+      /*
+      RESPONSE:
+      [
+        {
+          id: 1,
+          code: "BUS101",
+          sitting_capacity: 40,
+          standing_capacity: 20,
+          status: "active"
+        }
+      ]
+      */
+    } catch {
+      setMessage("Failed to fetch buses");
     }
   };
 
+  useEffect(() => {
+    fetchBuses();
+  }, []);
+
   // -------------------------
-  // Add Bus (Form)
+  // ADD BUS
   // -------------------------
   const addBus = async () => {
-    try {
-      setLoading(true);
+    if (!newBus.code || !newBus.sitting_capacity) {
+      return setMessage("Code and sitting capacity required");
+    }
 
-      const res = await fetch("http://localhost:8000/admin/bus", {
+    try {
+      await fetch("http://localhost:8000/admin/buses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
         },
-        body: JSON.stringify({
-          ...newBus,
-          passenger_seats: parseInt(newBus.passenger_seats),
-          passenger_cap: parseInt(newBus.passenger_cap),
-        }),
-      });
+        body: JSON.stringify(newBus),
 
-      if (!res.ok) throw new Error("Add failed");
-
-      setMessage("Bus added successfully!");
-      setNewBus({
-        bus_no: "",
-        passenger_seats: "",
-        passenger_cap: "",
-      });
-
-    } catch (err) {
-      setMessage(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // -------------------------
-  // Search Bus
-  // -------------------------
-  const searchBus = async () => {
-    if (!searchId) return;
-
-    try {
-      setLoading(true);
-
-      const res = await fetch(
-        `http://localhost:8000/admin/bus/${searchId}`,
+        /*
+        REQUEST:
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          code: "BUS101",
+          sitting_capacity: 40,
+          standing_capacity: 20,
+          status: "active"
         }
-      );
+        */
+      });
 
-      if (!res.ok) throw new Error("Bus not found");
+      setMessage("Bus added!");
+      setNewBus({
+        code: "",
+        sitting_capacity: "",
+        standing_capacity: "",
+        status: "active",
+      });
 
-      const data = await res.json();
-      setBusData(data);
-      setMessage("");
-
-    } catch (err) {
-      setBusData(null);
-      setMessage(err.message);
-    } finally {
-      setLoading(false);
+      fetchBuses();
+    } catch {
+      setMessage("Failed to add bus");
     }
   };
 
   // -------------------------
-  // Update Bus
+  // UPDATE BUS
   // -------------------------
   const updateBus = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/admin/bus/${busData.bus_id}`,
+      await fetch(
+        `http://localhost:8000/admin/buses/${selectedBus.id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
           },
-          body: JSON.stringify({
-            ...busData,
-            passenger_seats: parseInt(busData.passenger_seats),
-            passenger_cap: parseInt(busData.passenger_cap),
-          }),
+          body: JSON.stringify(selectedBus),
         }
       );
 
-      if (!res.ok) throw new Error("Update failed");
-
-      setMessage("Bus updated successfully!");
-
-    } catch (err) {
-      setMessage(err.message);
+      setMessage("Updated!");
+      setSelectedBus(null);
+      fetchBuses();
+    } catch {
+      setMessage("Update failed");
     }
   };
 
   // -------------------------
-  // Delete Bus
+  // TOGGLE STATUS
   // -------------------------
-  const deleteBus = async () => {
+  const toggleStatus = async (bus) => {
+    const updated = {
+      ...bus,
+      status:
+        bus.status === "active"
+          ? "maintenance"
+          : bus.status === "maintenance"
+          ? "inactive"
+          : "active",
+    };
+
     try {
-      const res = await fetch(
-        `http://localhost:8000/admin/bus/${busData.bus_id}`,
+      await fetch(
+        `http://localhost:8000/admin/buses/${bus.id}`,
         {
-          method: "DELETE",
+          method: "PUT",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
           },
+          body: JSON.stringify(updated),
         }
       );
 
-      if (!res.ok) throw new Error("Delete failed");
-
-      setBusData(null);
-      setMessage("Bus deleted successfully!");
-
-    } catch (err) {
-      setMessage(err.message);
+      fetchBuses();
+    } catch {
+      setMessage("Status update failed");
     }
   };
+
+  // -------------------------
+  // FILTER
+  // -------------------------
+  const filteredBuses = buses.filter((b) =>
+    b.code.toLowerCase().includes(search.toLowerCase())
+  );
 
   // -------------------------
   // UI
   // -------------------------
   return (
     <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-bold">Bus Data Feed</h1>
 
-      {/* TOP SECTION */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <h1 className="text-2xl font-bold">Buses Management</h1>
 
-        {/* CSV Upload */}
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-3">Upload Bus CSV</h2>
+      {/* ADD BUS */}
+      <div className="bg-white p-6 shadow rounded">
+        <h2 className="font-semibold mb-4">Add Bus</h2>
+
+        <div className="grid grid-cols-2 gap-4">
 
           <input
-            type="file"
-            accept=".csv"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            className="hidden"
+            placeholder="Bus Code"
+            value={newBus.code}
+            onChange={(e) =>
+              setNewBus({ ...newBus, code: e.target.value })
+            }
+            className="border p-2"
           />
 
-          <div
-            onClick={() => fileInputRef.current.click()}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            className="border-2 border-dashed border-purple-400 p-8 text-center rounded cursor-pointer"
+          <select
+            value={newBus.status}
+            onChange={(e) =>
+              setNewBus({ ...newBus, status: e.target.value })
+            }
+            className="border p-2"
           >
-            {csvFile ? (
-              <p className="text-green-600">{csvFile.name}</p>
-            ) : (
-              <p>Drag & Drop CSV file here or Click to Browse</p>
-            )}
-          </div>
+            <option value="active">Active</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="inactive">Inactive</option>
+          </select>
 
-          <button
-            onClick={uploadCSV}
-            className="mt-4 bg-purple-600 text-white px-4 py-2 rounded"
-            disabled={loading}
-          >
-            Upload CSV
-          </button>
-        </div>
-
-        {/* Add Bus Form */}
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-3">Add Bus</h2>
-
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              placeholder="Bus Number"
-              value={newBus.bus_no}
-              onChange={(e) =>
-                setNewBus({ ...newBus, bus_no: e.target.value })
-              }
-              className="border p-2 rounded"
-            />
-
-            <input
-              placeholder="Passenger Seats"
-              value={newBus.passenger_seats}
-              onChange={(e) =>
-                setNewBus({ ...newBus, passenger_seats: e.target.value })
-              }
-              className="border p-2 rounded"
-            />
-
-            <input
-              placeholder="Passenger Capacity"
-              value={newBus.passenger_cap}
-              onChange={(e) =>
-                setNewBus({ ...newBus, passenger_cap: e.target.value })
-              }
-              className="border p-2 rounded"
-            />
-          </div>
-
-          <button
-            onClick={addBus}
-            className="mt-4 bg-purple-600 text-white px-4 py-2 rounded"
-            disabled={loading}
-          >
-            Add Bus
-          </button>
-        </div>
-      </div>
-
-      {/* SEARCH + EDIT SECTION */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">Search Bus by ID</h2>
-
-        <div className="flex gap-2 mb-4">
           <input
             type="number"
-            placeholder="Enter bus_id"
-            value={searchId}
-            onChange={(e) => setSearchId(e.target.value)}
-            className="border p-2 rounded w-48"
+            placeholder="Sitting Capacity"
+            value={newBus.sitting_capacity}
+            onChange={(e) =>
+              setNewBus({
+                ...newBus,
+                sitting_capacity: e.target.value,
+              })
+            }
+            className="border p-2"
           />
-          <button
-            onClick={searchBus}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Search
-          </button>
+
+          <input
+            type="number"
+            placeholder="Standing Capacity"
+            value={newBus.standing_capacity}
+            onChange={(e) =>
+              setNewBus({
+                ...newBus,
+                standing_capacity: e.target.value,
+              })
+            }
+            className="border p-2"
+          />
         </div>
 
-        {busData && (
-          <table className="w-full border-collapse mb-4">
-            <thead>
-              <tr className="bg-purple-100">
-                <th className="border p-2">Bus No</th>
-                <th className="border p-2">Seats</th>
-                <th className="border p-2">Capacity</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border p-2">
-                  <input
-                    value={busData.bus_no}
-                    onChange={(e) =>
-                      setBusData({ ...busData, bus_no: e.target.value })
-                    }
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    value={busData.passenger_seats}
-                    onChange={(e) =>
-                      setBusData({ ...busData, passenger_seats: e.target.value })
-                    }
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    value={busData.passenger_cap}
-                    onChange={(e) =>
-                      setBusData({ ...busData, passenger_cap: e.target.value })
-                    }
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
-
-        {busData && (
-          <div className="flex gap-4">
-            <button
-              onClick={updateBus}
-              className="bg-green-600 text-white px-4 py-2 rounded"
-            >
-              Update
-            </button>
-
-            <button
-              onClick={deleteBus}
-              className="bg-red-600 text-white px-4 py-2 rounded"
-            >
-              Delete
-            </button>
-          </div>
-        )}
-
-        {message && (
-          <p className="mt-4 text-sm text-purple-700">{message}</p>
-        )}
+        <button
+          onClick={addBus}
+          className="mt-4 bg-purple-600 text-white px-4 py-2"
+        >
+          Add Bus
+        </button>
       </div>
+
+      {/* TABLE */}
+      <div className="bg-white p-6 shadow rounded">
+        <h2 className="font-semibold mb-4">All Buses</h2>
+
+        <input
+          placeholder="Search by code..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border p-2 mb-4 w-full"
+        />
+
+        <table className="w-full border text-center">
+          <thead className="bg-gray-100">
+            <tr>
+              <th>Code</th>
+              <th>Sitting</th>
+              <th>Standing</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filteredBuses.map((b) => (
+              <tr key={b.id} className="border-t">
+                <td>{b.code}</td>
+                <td>{b.sitting_capacity}</td>
+                <td>{b.standing_capacity}</td>
+                <td>{b.status}</td>
+
+                <td className="space-x-2">
+                  <button
+                    onClick={() => setSelectedBus(b)}
+                    className="bg-yellow-500 text-white px-2 py-1"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => toggleStatus(b)}
+                    className="bg-blue-600 text-white px-2 py-1"
+                  >
+                    Toggle
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EDIT */}
+      {selectedBus && (
+        <div className="bg-white p-6 shadow rounded">
+          <h2 className="font-semibold mb-4">Edit Bus</h2>
+
+          <div className="grid grid-cols-2 gap-4">
+
+            <input
+              value={selectedBus.code}
+              onChange={(e) =>
+                setSelectedBus({ ...selectedBus, code: e.target.value })
+              }
+              className="border p-2"
+            />
+
+            <select
+              value={selectedBus.status}
+              onChange={(e) =>
+                setSelectedBus({ ...selectedBus, status: e.target.value })
+              }
+              className="border p-2"
+            >
+              <option value="active">Active</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="inactive">Inactive</option>
+            </select>
+
+            <input
+              type="number"
+              value={selectedBus.sitting_capacity}
+              onChange={(e) =>
+                setSelectedBus({
+                  ...selectedBus,
+                  sitting_capacity: e.target.value,
+                })
+              }
+              className="border p-2"
+            />
+
+            <input
+              type="number"
+              value={selectedBus.standing_capacity}
+              onChange={(e) =>
+                setSelectedBus({
+                  ...selectedBus,
+                  standing_capacity: e.target.value,
+                })
+              }
+              className="border p-2"
+            />
+          </div>
+
+          <button
+            onClick={updateBus}
+            className="mt-4 bg-green-600 text-white px-4 py-2"
+          >
+            Save Changes
+          </button>
+        </div>
+      )}
+
+      {message && <p className="text-purple-600">{message}</p>}
     </div>
   );
 }
 
-export default BusDataFeed;
+export default BusesDataFeed;

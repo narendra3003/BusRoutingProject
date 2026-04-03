@@ -14,7 +14,8 @@ from .routers import (public_routes,
                       admin_override,
                       admin_schedule,
                         admin_routes,
-                        admin_stops
+                        admin_stops,
+                        analytics
 )
 from .database import Base, engine
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,6 +55,7 @@ app.include_router(driver_profile.router, prefix="/driver/profile", tags=["Drive
 app.include_router(driver_trips.router, prefix="/driver/trips", tags=["Driver Trips"])
 app.include_router(driver_leaves.router, prefix="/driver/leaves", tags=["Driver Leaves"])
 
+app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 app.include_router(admin_drivers.router, prefix="/admin/drivers", tags=["Admin Drivers"])
 app.include_router(admin_buses.router, prefix="/admin/buses", tags=["Admin Buses"])
 app.include_router(admin_routes.router, prefix="/admin/routes", tags=["Admin Routes"])

@@ -168,7 +168,16 @@ function DriverDashboard() {
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Driver Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Driver Dashboard</h1>
+
+          <button
+            onClick={() => window.location.href = "/driver/leave"}
+            className="bg-red-500 text-white px-4 py-2 rounded-lg shadow"
+          >
+            Apply Leave
+          </button>
+        </div>
       </div>
 
       {/* TOP SECTION */}
@@ -209,6 +218,12 @@ function DriverDashboard() {
             tileContent={getTileContent}
             tileClassName={getTileClassName}
           />
+          <button
+            onClick={() => window.location.href = "/driver/leave"}
+            className="mt-4 w-full bg-yellow-500 text-white py-2 rounded"
+          >
+            Manage Leaves
+          </button>
 
           <div className="mt-6 border-t pt-4 text-sm">
             <div className="flex items-center gap-2">

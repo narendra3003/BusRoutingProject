@@ -1,27 +1,57 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 function StopsDataFeed() {
   // -------------------------
   // States
   // -------------------------
   const [csvFile, setCsvFile] = useState(null);
-  const [jsonInput, setJsonInput] = useState("");
-  const [searchId, setSearchId] = useState("");
-  const [stopData, setStopData] = useState(null);
+  const [search, setSearch] = useState("");
+  const [stops, setStops] = useState([]);
+  const [selectedStop, setSelectedStop] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // -------------------------
-  // CSV Drag & Drop
-  // -------------------------
   const fileInputRef = useRef(null);
+
   const [newStop, setNewStop] = useState({
-    stop_code: "",
-    stop_name: "",
-    stop_lat: "",
-    stop_lon: "",
+    name: "",
+    lat: "",
+    lon: "",
+    zone: "",
+    type: "stop",
   });
-  // Add this function
+
+  // -------------------------
+  // FETCH ALL STOPS
+  // -------------------------
+  const fetchStops = async () => {
+    try {
+      setLoading(true);
+      const token = sessionStorage.getItem("token");
+
+      const res = await fetch("http://localhost:8000/stops", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      setStops(data);
+    } catch (err) {
+      setMessage("Failed to fetch stops");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStops();
+  }, []);
+
+  // -------------------------
+  // CSV Upload
+  // -------------------------
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file && file.name.endsWith(".csv")) {
@@ -43,331 +73,351 @@ function StopsDataFeed() {
     }
   };
 
-  const handleDragOver = (e) => e.preventDefault();
-
   const uploadCSV = async () => {
-    if (!csvFile) return setMessage("Please select a CSV file");
+    if (!csvFile) return setMessage("Select CSV first");
 
     const formData = new FormData();
     formData.append("file", csvFile);
 
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8000/admin/stops/upload-csv", {
-        method: "POST",
-        body: formData,
-      });
+      const token = sessionStorage.getItem("token");
 
-      if (!res.ok) throw new Error("CSV Upload failed");
-      setMessage("CSV uploaded successfully!");
+      const res = await fetch(
+        "http://localhost:8000/admin/stops/upload",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!res.ok) throw new Error();
+
+      setMessage("CSV uploaded!");
       setCsvFile(null);
-    } catch (err) {
-      setMessage(err.message);
+      fetchStops();
+    } catch {
+      setMessage("Upload failed");
     } finally {
       setLoading(false);
     }
   };
 
   // -------------------------
-  // JSON Upload
+  // ADD STOP
   // -------------------------
-  const uploadJSON = async () => {
+  const addStop = async () => {
+    if (!newStop.name || !newStop.lat || !newStop.lon) {
+      return setMessage("Name, lat, lon required");
+    }
+
     try {
       setLoading(true);
+      const token = sessionStorage.getItem("token");
 
-      const res = await fetch("http://localhost:8000/admin/stops/upload-json", {
+      await fetch("http://localhost:8000/admin/stops", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify([newStop]), // send as array
+        body: JSON.stringify(newStop),
       });
 
-      if (!res.ok) throw new Error("Upload failed");
-
-      setMessage("Stop added successfully!");
+      setMessage("Stop added!");
       setNewStop({
-        stop_code: "",
-        stop_name: "",
-        stop_lat: "",
-        stop_lon: "",
+        name: "",
+        lat: "",
+        lon: "",
+        zone: "",
+        type: "stop",
       });
-    } catch (err) {
-      setMessage(err.message);
+
+      fetchStops();
+    } catch {
+      setMessage("Failed to add stop");
     } finally {
       setLoading(false);
     }
   };
 
   // -------------------------
-  // Search Stop
-  // -------------------------
-const searchStop = async () => {
-  if (!searchId) return;
-
-  try {
-    setLoading(true);
-
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(
-      `http://localhost:8000/admin/stops/${searchId}`,
-      {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    if (!res.ok) {
-      if (res.status === 401) throw new Error("Unauthorized");
-      if (res.status === 403) throw new Error("Admins only");
-      if (res.status === 404) throw new Error("Stop not found");
-    }
-
-    const data = await res.json();
-    setStopData(data);
-    setMessage("");
-
-  } catch (err) {
-    setStopData(null);
-    setMessage(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // -------------------------
-  // Update Stop
+  // UPDATE STOP
   // -------------------------
   const updateStop = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/admin/stops/${stopData.stop_id}`,
+      const token = sessionStorage.getItem("token");
+
+      console.log("Updating stop:", selectedStop);
+
+      await fetch(
+        `http://localhost:8000/admin/stops/${selectedStop.id}`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(stopData),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: selectedStop.name,
+            lat: selectedStop.lat,
+            lon: selectedStop.lon,
+            type: selectedStop.type,
+            zone: selectedStop.zone,
+            is_active: selectedStop.is_active,
+          })
         }
       );
 
-      if (!res.ok) throw new Error("Update failed");
-      setMessage("Stop updated successfully!");
-    } catch (err) {
-      setMessage(err.message);
+      setMessage("Updated!");
+      setSelectedStop(null);
+      fetchStops();
+    } catch {
+      setMessage("Update failed");
     }
   };
 
   // -------------------------
-  // Delete Stop
+  // DELETE STOP
   // -------------------------
-  const deleteStop = async () => {
+  const deleteStop = async (id) => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/admin/stops/${stopData.stop_id}`,
-        { method: "DELETE" }
-      );
+      const token = sessionStorage.getItem("token");
 
-      if (!res.ok) throw new Error("Delete failed");
+      await fetch(`http://localhost:8000/admin/stops/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      setStopData(null);
-      setMessage("Stop deleted successfully!");
-    } catch (err) {
-      setMessage(err.message);
+      setMessage("Deleted!");
+      fetchStops();
+    } catch {
+      setMessage("Delete failed");
     }
   };
+
+  // -------------------------
+  // FILTERED STOPS
+  // -------------------------
+  const filteredStops = stops.filter((s) =>
+    s.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   // -------------------------
   // UI
   // -------------------------
   return (
     <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-bold">Stops Data Feed</h1>
+      <h1 className="text-2xl font-bold">Stops Management</h1>
 
       {/* TOP SECTION */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6">
 
-        {/* CSV Upload */}
+        {/* ADD STOP */}
         <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-3">Upload Stops CSV</h2>
+          <h2 className="font-semibold mb-4">Add Stop</h2>
 
-        <input
-          type="file"
-          accept=".csv"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          className="hidden"
-        />
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              placeholder="Name"
+              value={newStop.name}
+              onChange={(e) =>
+                setNewStop({ ...newStop, name: e.target.value })
+              }
+              className="border p-2 rounded"
+            />
 
-        <div
-          onClick={() => fileInputRef.current.click()}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          className="border-2 border-dashed border-purple-400 p-8 text-center rounded cursor-pointer"
-        >
-          {csvFile ? (
-            <p className="text-green-600">{csvFile.name}</p>
-          ) : (
-            <p>Drag & Drop CSV file here or Click to Browse</p>
-          )}
-        </div>
+            <input
+              placeholder="Zone"
+              value={newStop.zone}
+              onChange={(e) =>
+                setNewStop({ ...newStop, zone: e.target.value })
+              }
+              className="border p-2 rounded"
+            />
 
-        <button
-          onClick={uploadCSV}
-          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded"
-          disabled={loading}
-        >
-          Upload CSV
-        </button>
-      </div>
+            <input
+              type="number"
+              placeholder="Latitude"
+              value={newStop.lat}
+              onChange={(e) =>
+                setNewStop({ ...newStop, lat: e.target.value })
+              }
+              className="border p-2 rounded"
+            />
 
-        {/* JSON Upload */}
-        <div className="bg-white p-6 shadow rounded">
-          <div className="mb-4">
-            <h2 className="font-semibold mb-3">Add Stop</h2>
+            <input
+              type="number"
+              placeholder="Longitude"
+              value={newStop.lon}
+              onChange={(e) =>
+                setNewStop({ ...newStop, lon: e.target.value })
+              }
+              className="border p-2 rounded"
+            />
 
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                placeholder="Stop Code"
-                value={newStop.stop_code}
-                onChange={(e) =>
-                  setNewStop({ ...newStop, stop_code: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
-
-              <input
-                placeholder="Stop Name"
-                value={newStop.stop_name}
-                onChange={(e) =>
-                  setNewStop({ ...newStop, stop_name: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
-
-              <input
-                placeholder="Latitude"
-                value={newStop.stop_lat}
-                onChange={(e) =>
-                  setNewStop({ ...newStop, stop_lat: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
-
-              <input
-                placeholder="Longitude"
-                value={newStop.stop_lon}
-                onChange={(e) =>
-                  setNewStop({ ...newStop, stop_lon: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
-            </div>
-
-            <button
-              onClick={uploadJSON}
-              className="mt-4 bg-purple-600 text-white px-4 py-2 rounded"
-              disabled={loading}
+            <select
+              value={newStop.type}
+              onChange={(e) =>
+                setNewStop({ ...newStop, type: e.target.value })
+              }
+              className="border p-2 rounded col-span-2"
             >
-              Add Stop
-            </button>
+              <option value="stop">Stop</option>
+              <option value="terminal">Terminal</option>
+              <option value="depot">Depot</option>
+            </select>
           </div>
-        </div>
-      </div>
 
-      {/* SEARCH + EDIT SECTION */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">Search Stop by ID</h2>
-
-        <div className="flex gap-2 mb-4">
-          <input
-            type="number"
-            placeholder="Enter stop_id"
-            value={searchId}
-            onChange={(e) => setSearchId(e.target.value)}
-            className="border p-2 rounded w-48"
-          />
           <button
-            onClick={searchStop}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={addStop}
+            className="mt-4 bg-purple-600 text-white px-4 py-2 rounded"
           >
-            Search
+            Add Stop
           </button>
         </div>
 
-        {stopData && (
-          <table className="w-full border-collapse mb-4">
-            <thead>
-              <tr className="bg-purple-100">
-                <th className="border p-2">Stop Code</th>
-                <th className="border p-2">Stop Name</th>
-                <th className="border p-2">Latitude</th>
-                <th className="border p-2">Longitude</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border p-2">
-                  <input
-                    value={stopData.stop_code}
-                    onChange={(e) =>
-                      setStopData({ ...stopData, stop_code: e.target.value })
-                    }
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    value={stopData.stop_name}
-                    onChange={(e) =>
-                      setStopData({ ...stopData, stop_name: e.target.value })
-                    }
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    value={stopData.stop_lat}
-                    onChange={(e) =>
-                      setStopData({ ...stopData, stop_lat: e.target.value })
-                    }
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    value={stopData.stop_lon}
-                    onChange={(e) =>
-                      setStopData({ ...stopData, stop_lon: e.target.value })
-                    }
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
+        {/* CSV */}
+        <div className="bg-white p-6 shadow rounded">
+          <h2 className="font-semibold mb-4">Upload CSV</h2>
 
-        {stopData && (
-          <div className="flex gap-4">
-            <button
-              onClick={updateStop}
-              className="bg-green-600 text-white px-4 py-2 rounded"
-            >
-              Update
-            </button>
+          <input
+            type="file"
+            accept=".csv"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
 
-            <button
-              onClick={deleteStop}
-              className="bg-red-600 text-white px-4 py-2 rounded"
-            >
-              Delete
-            </button>
+          <div
+            onClick={() => fileInputRef.current.click()}
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            className="border-2 border-dashed p-8 text-center cursor-pointer"
+          >
+            {csvFile ? csvFile.name : "Click or Drag CSV"}
           </div>
-        )}
 
-        {message && (
-          <p className="mt-4 text-sm text-purple-700">{message}</p>
-        )}
+          <button
+            onClick={uploadCSV}
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Upload
+          </button>
+        </div>
       </div>
+
+      {/* TABLE */}
+      <div className="bg-white p-6 shadow rounded">
+        <h2 className="font-semibold mb-4">All Stops</h2>
+
+        <input
+          placeholder="Search by name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border p-2 mb-4 w-full"
+        />
+
+        <table className="w-full border">
+          <thead>
+            <tr className="bg-gray-100">
+              <th>ID</th>
+              <th>Name</th>
+              <th>Zone</th>
+              <th>Lat</th>
+              <th>Lon</th>
+              <th>Type</th>
+              <th>Active</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filteredStops.map((s) => (
+              <tr key={s.id} className="text-center border-t">
+                <td>{s.id}</td>
+                <td>{s.name}</td>
+                <td>{s.zone}</td>
+                <td>{s.lat}</td>
+                <td>{s.lon}</td>
+                <td>{s.type}</td>
+                <td>{s.is_active === true ? "Yes" : "No"}</td>
+
+                <td className="space-x-2">
+                  <button
+                    onClick={() => setSelectedStop(s)}
+                    className="bg-yellow-500 text-white px-2 py-1"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => deleteStop(s.id)}
+                    className="bg-red-600 text-white px-2 py-1"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EDIT */}
+      {selectedStop && (
+        <div className="bg-white p-6 shadow rounded">
+          <h2 className="font-semibold mb-4">Edit Stop</h2>
+
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              value={selectedStop.name}
+              onChange={(e) =>
+                setSelectedStop({ ...selectedStop, name: e.target.value })
+              }
+              className="border p-2"
+            />
+
+            <input
+              value={selectedStop.zone || ""}
+              onChange={(e) =>
+                setSelectedStop({ ...selectedStop, zone: e.target.value })
+              }
+              className="border p-2"
+            />
+
+            <input
+              value={selectedStop.lat}
+              onChange={(e) =>
+                setSelectedStop({ ...selectedStop, lat: e.target.value })
+              }
+              className="border p-2"
+            />
+
+            <input
+              value={selectedStop.lon}
+              onChange={(e) =>
+                setSelectedStop({ ...selectedStop, lon: e.target.value })
+              }
+              className="border p-2"
+            />
+          </div>
+
+          <button
+            onClick={updateStop}
+            className="mt-4 bg-green-600 text-white px-4 py-2"
+          >
+            Save
+          </button>
+        </div>
+      )}
+
+      {message && <p className="text-purple-600">{message}</p>}
     </div>
   );
 }

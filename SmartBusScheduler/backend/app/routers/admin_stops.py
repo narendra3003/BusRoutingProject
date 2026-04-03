@@ -123,7 +123,7 @@ def update_stop(
     payload: StopUpdate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
-):
+):  
     check_admin(current_user)
 
     stop = db.query(Stop).filter(Stop.id == stop_id).first()
