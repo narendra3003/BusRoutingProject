@@ -18,123 +18,116 @@ function OverridePage() {
   const [message, setMessage] = useState("");
 
   // -------------------------
-  // FETCH INITIAL DATA
+  // MOCK DATA
   // -------------------------
-  const fetchInit = async () => {
-    try {
-      const [d, b, h] = await Promise.all([
-        fetch("http://localhost:8000/admin/drivers"),
-        fetch("http://localhost:8000/admin/buses"),
-        fetch("http://localhost:8000/admin/overrides"),
-      ]);
+  const mockDrivers = [
+    { user_id: 1, name: "John" },
+    { user_id: 2, name: "Mike" },
+    { user_id: 3, name: "Rahul" },
+  ];
 
-      setDrivers(await d.json());
-      setBuses(await b.json());
-      setHistory(await h.json());
+  const mockBuses = [
+    { id: 1, code: "BUS-101" },
+    { id: 2, code: "BUS-202" },
+    { id: 3, code: "BUS-303" },
+  ];
 
-      /*
-      HISTORY RESPONSE:
-      [
-        {
-          id: 1,
-          trip_id: 10,
-          old_driver: "A",
-          new_driver: "B",
-          old_bus: "BUS1",
-          new_bus: "BUS2",
-          created_at: "..."
-        }
-      ]
-      */
+  const mockTrips = [
+    {
+      id: 1,
+      route_name: "Route A",
+      start_time: "08:00",
+      driver_id: 1,
+      driver_name: "John",
+      bus_id: 1,
+      bus_code: "BUS-101",
+      status: "Scheduled",
+    },
+    {
+      id: 2,
+      route_name: "Route B",
+      start_time: "10:00",
+      driver_id: 2,
+      driver_name: "Mike",
+      bus_id: 2,
+      bus_code: "BUS-202",
+      status: "Scheduled",
+    },
+  ];
 
-    } catch {
-      setMessage("Failed to load data");
-    }
-  };
-
+  // -------------------------
+  // INIT LOAD
+  // -------------------------
   useEffect(() => {
-    fetchInit();
+    // simulate API delay
+    setTimeout(() => {
+      setDrivers(mockDrivers);
+      setBuses(mockBuses);
+      setHistory([]);
+    }, 300);
   }, []);
 
   // -------------------------
-  // FETCH TRIPS BY DATE
+  // FETCH TRIPS (MOCK)
   // -------------------------
-  const fetchTrips = async () => {
+  const fetchTrips = () => {
     if (!date) return;
 
-    try {
-      const res = await fetch(
-        `http://localhost:8000/admin/dispatch?date=${date}`
-      );
-
-      const data = await res.json();
-      setTrips(data);
-
-      /*
-      RESPONSE:
-      [
-        {
-          id,
-          route_name,
-          start_time,
-          driver_id,
-          driver_name,
-          bus_id,
-          bus_code,
-          status
-        }
-      ]
-      */
-
-    } catch {
-      setMessage("Failed to fetch trips");
-    }
+    setTimeout(() => {
+      setTrips(mockTrips);
+      setMessage("Trips loaded (mock)");
+    }, 300);
   };
 
   // -------------------------
-  // APPLY OVERRIDE
+  // APPLY OVERRIDE (LOCAL UPDATE)
   // -------------------------
-  const applyOverride = async () => {
+  const applyOverride = () => {
     if (!selectedTrip) return setMessage("Select a trip");
 
-    try {
-      await fetch("http://localhost:8000/admin/overrides", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          trip_id: selectedTrip.id,
-          new_driver_id: overrideData.new_driver_id,
-          new_bus_id: overrideData.new_bus_id,
-          reason: overrideData.reason,
-        }),
+    const newDriver = drivers.find(
+      (d) => d.user_id == overrideData.new_driver_id
+    );
+    const newBus = buses.find((b) => b.id == overrideData.new_bus_id);
 
-        /*
-        REQUEST:
-        {
-          trip_id,
-          new_driver_id,
-          new_bus_id,
-          reason
-        }
-        */
-      });
+    // Update trip locally
+    const updatedTrips = trips.map((t) => {
+      if (t.id === selectedTrip.id) {
+        return {
+          ...t,
+          driver_id: newDriver?.user_id || t.driver_id,
+          driver_name: newDriver?.name || t.driver_name,
+          bus_id: newBus?.id || t.bus_id,
+          bus_code: newBus?.code || t.bus_code,
+        };
+      }
+      return t;
+    });
 
-      setMessage("Override applied!");
-      setSelectedTrip(null);
-      setOverrideData({
-        new_driver_id: "",
-        new_bus_id: "",
-        reason: "",
-      });
+    setTrips(updatedTrips);
 
-      fetchTrips();
-      fetchInit();
-    } catch {
-      setMessage("Override failed");
-    }
+    // Add to history
+    const newHistory = {
+      id: Date.now(),
+      trip_id: selectedTrip.id,
+      old_driver: selectedTrip.driver_name,
+      new_driver: newDriver?.name || selectedTrip.driver_name,
+      old_bus: selectedTrip.bus_code,
+      new_bus: newBus?.code || selectedTrip.bus_code,
+      created_at: new Date().toISOString(),
+    };
+
+    setHistory([newHistory, ...history]);
+
+    // Reset
+    setSelectedTrip(null);
+    setOverrideData({
+      new_driver_id: "",
+      new_bus_id: "",
+      reason: "",
+    });
+
+    setMessage("Override applied");
   };
 
   // -------------------------
@@ -142,7 +135,6 @@ function OverridePage() {
   // -------------------------
   return (
     <div className="p-6 space-y-8">
-
       <h1 className="text-2xl font-bold">Override Management</h1>
 
       {/* SELECT TRIP */}
@@ -210,7 +202,6 @@ function OverridePage() {
           </p>
 
           <div className="grid grid-cols-2 gap-4">
-
             <select
               value={overrideData.new_driver_id}
               onChange={(e) =>
@@ -258,7 +249,6 @@ function OverridePage() {
               }
               className="border p-2 col-span-2"
             />
-
           </div>
 
           <button

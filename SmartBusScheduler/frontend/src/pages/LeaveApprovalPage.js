@@ -7,79 +7,82 @@ function LeaveApprovalPage() {
   const [loading, setLoading] = useState(false);
 
   // -------------------------
-  // FETCH LEAVES
+  // MOCK DATA (single source of truth)
   // -------------------------
-  const fetchLeaves = async (status) => {
-    try {
-      setLoading(true);
+  const [allLeaves, setAllLeaves] = useState([
+    {
+      id: 1,
+      driver_name: "John",
+      start_date: "2026-04-10",
+      end_date: "2026-04-12",
+      reason: "Medical",
+      status: "pending",
+    },
+    {
+      id: 2,
+      driver_name: "Rahul",
+      start_date: "2026-04-15",
+      end_date: "2026-04-18",
+      reason: "Family function",
+      status: "pending",
+    },
+    {
+      id: 3,
+      driver_name: "Mike",
+      start_date: "2026-04-01",
+      end_date: "2026-04-03",
+      reason: "Personal",
+      status: "granted",
+    },
+    {
+      id: 4,
+      driver_name: "Amit",
+      start_date: "2026-03-28",
+      end_date: "2026-03-30",
+      reason: "Emergency",
+      status: "rejected",
+    },
+  ]);
 
-      const res = await fetch(
-        `http://localhost:8000/admin/leaves?status=${status}`,
-        {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-          },
-        }
-      );
+  // -------------------------
+  // FETCH (FILTER MOCK)
+  // -------------------------
+  const fetchLeaves = (status) => {
+    setLoading(true);
 
-      if (!res.ok) throw new Error("Failed to fetch leaves");
-
-      const data = await res.json();
-      setLeaves(data);
-
-    } catch (err) {
-      setMessage(err.message);
-    } finally {
+    setTimeout(() => {
+      const filtered = allLeaves.filter((l) => l.status === status);
+      setLeaves(filtered);
       setLoading(false);
-    }
+    }, 300);
   };
 
   useEffect(() => {
     fetchLeaves(activeTab);
-  }, [activeTab]);
+  }, [activeTab, allLeaves]);
 
   // -------------------------
   // APPROVE
   // -------------------------
-  const approveLeave = async (id) => {
-    try {
-      await fetch(
-        `http://localhost:8000/admin/leaves/${id}/approve`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-          },
-        }
-      );
+  const approveLeave = (id) => {
+    const updated = allLeaves.map((l) =>
+      l.id === id ? { ...l, status: "granted" } : l
+    );
 
-      setMessage("Leave approved");
-      fetchLeaves(activeTab);
-    } catch {
-      setMessage("Approve failed");
-    }
+    setAllLeaves(updated);
+    setMessage("Leave approved ");
   };
 
   // -------------------------
   // REJECT
   // -------------------------
-  const rejectLeave = async (id) => {
-    try {
-      await fetch(
-        `http://localhost:8000/admin/leaves/${id}/reject`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-          },
-        }
-      );
+  const rejectLeave = (id) => {
+    const updated = allLeaves.map((l) =>
+      l.id === id ? { ...l, status: "rejected" } : l
+    );
 
-      setMessage("Leave rejected");
-      fetchLeaves(activeTab);
-    } catch {
-      setMessage("Reject failed");
-    }
+    setAllLeaves(updated);
+    setMessage("Leave rejected");
   };
 
   // -------------------------
@@ -87,7 +90,6 @@ function LeaveApprovalPage() {
   // -------------------------
   return (
     <div className="p-6 space-y-6">
-
       <h1 className="text-2xl font-bold">Driver Leave Approval</h1>
 
       {/* TABS */}
@@ -109,7 +111,6 @@ function LeaveApprovalPage() {
 
       {/* TABLE */}
       <div className="bg-white p-6 shadow rounded">
-
         {loading && <p>Loading...</p>}
 
         <table className="w-full border text-center">
