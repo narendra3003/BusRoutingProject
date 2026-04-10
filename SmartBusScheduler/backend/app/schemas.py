@@ -304,6 +304,11 @@ class NotificationResponse(BaseModel):
 # DRIVER FEATURES
 # =========================
 
+class DriverLeaveStatusEnum(str, Enum):
+    pending = "pending"
+    granted = "granted"
+    rejected = "rejected"
+
 class DriverStopResponse(BaseModel):
     name: str
     coords: List[float]
@@ -357,9 +362,41 @@ class DriverLeaveResponse(BaseModel):
     start_date: date
     end_date: date
     reason: Optional[str]
-    status: str
+    status: DriverLeaveStatusEnum
     created_at: datetime
 
+
+# =====================================================
+# BASE SCHEMA
+# =====================================================
+
+class LeaveBase(BaseModel):
+    driver_id: int
+    start_date: date
+    end_date: date
+    reason: Optional[str] = None
+
+
+# =====================================================
+# RESPONSE SCHEMAS
+# =====================================================
+
+class LeaveResponse(BaseModel):
+    id: int
+    driver_id: int
+    driver_name: str
+    start_date: date
+    end_date: date
+    reason: Optional[str]
+    status: DriverLeaveStatusEnum
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MessageResponse(BaseModel):
+    message: str
 
 # =========================
 # CUSTOMER
@@ -508,3 +545,15 @@ class TripLiveStatusResponse(BaseModel):
     last_lat: Optional[float]
     last_lon: Optional[float]
     last_updated: datetime
+
+class DispatchResponse(BaseModel):
+    id: int
+    start_time: str
+    route_name: str
+    driver_name: str
+    bus_code: str
+    delay_minutes: int
+    status: str
+
+    class Config:
+        from_attributes = True  # For SQLAlchemy compatibility

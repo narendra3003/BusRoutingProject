@@ -8,6 +8,9 @@ from ..database import get_db
 
 router = APIRouter()
 
+def check_admin(user: dict):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
 
 # -----------------
 # SIGN UP

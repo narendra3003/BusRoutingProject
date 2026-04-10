@@ -20,7 +20,7 @@ function DriverLeavePage() {
     try {
       const token = sessionStorage.getItem("token");
 
-      const res = await fetch("http://localhost:8000/drivers/leaves", {
+      const res = await fetch("http://localhost:8000/driver/leaves", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -52,7 +52,7 @@ function DriverLeavePage() {
       setLoading(true);
       const token = sessionStorage.getItem("token");
 
-      const res = await fetch("http://localhost:8000/drivers/leaves", {
+      const res = await fetch("http://localhost:8000/driver/leaves/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -83,7 +83,7 @@ function DriverLeavePage() {
       const token = sessionStorage.getItem("token");
 
       const res = await fetch(
-        `http://localhost:8000/drivers/leaves/${id}`,
+        `http://localhost:8000/driver/leaves/${id}`,
         {
           method: "DELETE",
           headers: {

@@ -11,11 +11,15 @@ function OverridePage() {
   const [overrideData, setOverrideData] = useState({
     new_driver_id: "",
     new_bus_id: "",
+    new_start_time: "",
+    new_status: "",
     reason: "",
   });
 
   const [history, setHistory] = useState([]);
   const [message, setMessage] = useState("");
+
+  const token = sessionStorage.getItem("token");
 
   // -------------------------
   // FETCH INITIAL DATA
@@ -23,31 +27,25 @@ function OverridePage() {
   const fetchInit = async () => {
     try {
       const [d, b, h] = await Promise.all([
-        fetch("http://localhost:8000/admin/drivers"),
-        fetch("http://localhost:8000/admin/buses"),
-        fetch("http://localhost:8000/admin/overrides"),
+        fetch("http://localhost:8000/admin/drivers", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("http://localhost:8000/admin/buses", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("http://localhost:8000/admin/dispatch/overrides", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
+
+      if (!d.ok || !b.ok || !h.ok) {
+        throw new Error("Failed to fetch initial data");
+      }
 
       setDrivers(await d.json());
       setBuses(await b.json());
       setHistory(await h.json());
-
-      /*
-      HISTORY RESPONSE:
-      [
-        {
-          id: 1,
-          trip_id: 10,
-          old_driver: "A",
-          new_driver: "B",
-          old_bus: "BUS1",
-          new_bus: "BUS2",
-          created_at: "..."
-        }
-      ]
-      */
-
-    } catch {
+    } catch (error) {
       setMessage("Failed to load data");
     }
   };
@@ -64,28 +62,16 @@ function OverridePage() {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/admin/dispatch?date=${date}`
+        `http://localhost:8000/admin/dispatch?date=${date}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
+
+      if (!res.ok) throw new Error("Failed to fetch trips");
 
       const data = await res.json();
       setTrips(data);
-
-      /*
-      RESPONSE:
-      [
-        {
-          id,
-          route_name,
-          start_time,
-          driver_id,
-          driver_name,
-          bus_id,
-          bus_code,
-          status
-        }
-      ]
-      */
-
     } catch {
       setMessage("Failed to fetch trips");
     }
@@ -95,45 +81,72 @@ function OverridePage() {
   // APPLY OVERRIDE
   // -------------------------
   const applyOverride = async () => {
-    if (!selectedTrip) return setMessage("Select a trip");
+    if (!selectedTrip) {
+      setMessage("Select a trip");
+      return;
+    }
 
     try {
-      await fetch("http://localhost:8000/admin/overrides", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          trip_id: selectedTrip.id,
-          new_driver_id: overrideData.new_driver_id,
-          new_bus_id: overrideData.new_bus_id,
-          reason: overrideData.reason,
-        }),
+      // Normal overrides (driver, bus, time)
+      if (
+        overrideData.new_driver_id ||
+        overrideData.new_bus_id ||
+        overrideData.new_start_time
+      ) {
+        const res = await fetch(
+          "http://localhost:8000/admin/dispatch/overrides",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              trip_id: selectedTrip.id,
+              new_driver_id: overrideData.new_driver_id || null,
+              new_bus_id: overrideData.new_bus_id || null,
+              new_start_time: overrideData.new_start_time || null,
+              reason: overrideData.reason,
+            }),
+          }
+        );
 
-        /*
-        REQUEST:
-        {
-          trip_id,
-          new_driver_id,
-          new_bus_id,
-          reason
-        }
-        */
-      });
+        if (!res.ok) throw new Error("Override failed");
+      }
 
-      setMessage("Override applied!");
+      // Live status update
+      if (overrideData.new_status) {
+        const res = await fetch(
+          `http://localhost:8000/admin/dispatch/${selectedTrip.id}/status`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              status: overrideData.new_status,
+            }),
+          }
+        );
+
+        if (!res.ok) throw new Error("Status update failed");
+      }
+
+      setMessage("Override applied successfully!");
       setSelectedTrip(null);
       setOverrideData({
         new_driver_id: "",
         new_bus_id: "",
+        new_start_time: "",
+        new_status: "",
         reason: "",
       });
 
       fetchTrips();
       fetchInit();
-    } catch {
-      setMessage("Override failed");
+    } catch (error) {
+      setMessage(error.message || "Operation failed");
     }
   };
 
@@ -142,7 +155,6 @@ function OverridePage() {
   // -------------------------
   return (
     <div className="p-6 space-y-8">
-
       <h1 className="text-2xl font-bold">Override Management</h1>
 
       {/* SELECT TRIP */}
@@ -159,7 +171,7 @@ function OverridePage() {
 
           <button
             onClick={fetchTrips}
-            className="bg-blue-600 text-white px-4"
+            className="bg-blue-600 text-white px-4 py-2 rounded"
           >
             Load Trips
           </button>
@@ -187,8 +199,17 @@ function OverridePage() {
                 <td>{t.status}</td>
                 <td>
                   <button
-                    onClick={() => setSelectedTrip(t)}
-                    className="bg-purple-600 text-white px-2"
+                    onClick={() => {
+                      setSelectedTrip(t);
+                      setOverrideData({
+                        new_driver_id: "",
+                        new_bus_id: "",
+                        new_start_time: t.start_time,
+                        new_status: t.status,
+                        reason: "",
+                      });
+                    }}
+                    className="bg-purple-600 text-white px-3 py-1 rounded"
                   >
                     Select
                   </button>
@@ -210,7 +231,7 @@ function OverridePage() {
           </p>
 
           <div className="grid grid-cols-2 gap-4">
-
+            {/* Driver */}
             <select
               value={overrideData.new_driver_id}
               onChange={(e) =>
@@ -229,6 +250,7 @@ function OverridePage() {
               ))}
             </select>
 
+            {/* Bus */}
             <select
               value={overrideData.new_bus_id}
               onChange={(e) =>
@@ -247,6 +269,39 @@ function OverridePage() {
               ))}
             </select>
 
+            {/* Time Override */}
+            <input
+              type="time"
+              value={overrideData.new_start_time}
+              onChange={(e) =>
+                setOverrideData({
+                  ...overrideData,
+                  new_start_time: e.target.value,
+                })
+              }
+              className="border p-2"
+            />
+
+            {/* Status Update */}
+            <select
+              value={overrideData.new_status}
+              onChange={(e) =>
+                setOverrideData({
+                  ...overrideData,
+                  new_status: e.target.value,
+                })
+              }
+              className="border p-2"
+            >
+              <option value="">Select Status</option>
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="DELAYED">Delayed</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+
+            {/* Reason */}
             <input
               placeholder="Reason"
               value={overrideData.reason}
@@ -258,12 +313,11 @@ function OverridePage() {
               }
               className="border p-2 col-span-2"
             />
-
           </div>
 
           <button
             onClick={applyOverride}
-            className="mt-4 bg-red-600 text-white px-4 py-2"
+            className="mt-4 bg-red-600 text-white px-4 py-2 rounded"
           >
             Apply Override
           </button>
@@ -282,6 +336,9 @@ function OverridePage() {
               <th>New Driver</th>
               <th>Old Bus</th>
               <th>New Bus</th>
+              <th>Old Time</th>
+              <th>New Time</th>
+              <th>Reason</th>
               <th>Time</th>
             </tr>
           </thead>
@@ -290,10 +347,13 @@ function OverridePage() {
             {history.map((h) => (
               <tr key={h.id} className="border-t">
                 <td>{h.trip_id}</td>
-                <td>{h.old_driver}</td>
-                <td>{h.new_driver}</td>
-                <td>{h.old_bus}</td>
-                <td>{h.new_bus}</td>
+                <td>{h.old_driver_id}</td>
+                <td>{h.new_driver_id}</td>
+                <td>{h.old_bus_id}</td>
+                <td>{h.new_bus_id}</td>
+                <td>{h.old_start_time || "-"}</td>
+                <td>{h.new_start_time || "-"}</td>
+                <td>{h.reason || "-"}</td>
                 <td>{new Date(h.created_at).toLocaleString()}</td>
               </tr>
             ))}

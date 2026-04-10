@@ -188,6 +188,59 @@ function AdminDashboard() {
             </div>
           </a>
 
+          <a
+            href="/leave-approvals"
+            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-purple-100 text-purple-600 rounded-xl group-hover:scale-110 transition">
+                <Calendar size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Leave Approvals
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Review and approve driver leave requests
+                </p>
+              </div>
+            </div>
+          </a>
+
+          <a
+            href="/dispatch"
+            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-red-100 text-red-600 rounded-xl group-hover:scale-110 transition">
+                <AlertCircle size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Dispatch Center
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Manage and monitor dispatch operations
+                </p>
+              </div>
+            </div>
+          </a>
+
+          <a href="/override" className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100">
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-teal-100 text-teal-600 rounded-xl group-hover:scale-110 transition">
+                <AlertTriangle size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Override Requests
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Review and manage override requests
+                </p>
+              </div>
+            </div>
+          </a>
         </div>
       </div>
           {/* CARDS */}

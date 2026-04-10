@@ -18,7 +18,7 @@ function DispatchPage() {
   // -------------------------
   const fetchRoutes = async () => {
     try {
-      const res = await fetch("http://localhost:8000/routes");
+      const res = await fetch("http://localhost:8000/public/custRoutes");
       const data = await res.json();
       setRoutes(data);
     } catch {

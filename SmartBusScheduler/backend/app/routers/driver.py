@@ -256,7 +256,8 @@ def get_schedule(
             datetime.combine(date, trip.start_time) + timedelta(hours=2)
         ).time()
 
-        time=f"{trip.start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')}",
+        time = f"{trip.start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')}"
+
         response_trips.append(
             DriverTripResponse(
                 id=trip.id,
