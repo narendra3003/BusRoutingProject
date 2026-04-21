@@ -1,6 +1,6 @@
 # models.py
 from sqlalchemy import (
-    Column, Integer, String, Float, Date, Time, Text, ForeignKey, Boolean, DateTime, Enum, UniqueConstraint, func
+    Column, Index, Integer, String, Float, Date, Time, Text, ForeignKey, Boolean, DateTime, Enum, UniqueConstraint, func
 )
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import relationship
@@ -337,3 +337,93 @@ class TripLiveStatus(Base):
     trip = relationship("ScheduleTrip")
     stop = relationship("Stop")
 
+
+class Template(Base):
+    __tablename__ = "templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    template_type = Column(String, default="auto")
+
+    bus_count = Column(Integer, nullable=False)
+    driver_count = Column(Integer, nullable=False)
+
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, server_default=func.now())
+
+    # Relationships
+    records = relationship(
+        "TemplateRecord",
+        back_populates="template",
+        cascade="all, delete-orphan",
+    )
+
+    creator = relationship("User")
+
+    __table_args__ = (
+        Index("idx_templates_type", "template_type"),
+    )
+
+class TemplateRecord(Base):
+    __tablename__ = "template_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    template_id = Column(
+        Integer,
+        ForeignKey("templates.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    route_id = Column(
+        String,
+        ForeignKey("routes.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    start_time = Column(Time, nullable=False)
+    # busNo = Column(Integer, nullable=False)
+    # driverNo = Column(Integer, nullable=False)
+
+    # Relationships
+    template = relationship("Template", back_populates="records")
+    route = relationship("Route")
+
+    __table_args__ = (
+        Index("idx_template_records_template", "template_id"),
+        Index("idx_template_records_route", "route_id"),
+        Index(
+            "uq_template_route_time",
+            "template_id",
+            "route_id",
+            "start_time",
+            unique=True,
+        ),
+    )
+
+class OBData(Base):
+    __tablename__ = "ob_data"
+
+    id = Column(Integer, primary_key=True)
+
+    route_id = Column(String, ForeignKey("routes.id", ondelete="CASCADE"), nullable=False)
+
+    stop_id = Column(Integer, ForeignKey("stops.id", ondelete="CASCADE"), nullable=False)
+
+    boarding_count = Column(Integer, default=0)
+
+    offboarding_count = Column(Integer, default=0)
+
+    trip_datetime = Column(DateTime, nullable=False)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+    # Relationships
+    route = relationship("Route")
+    stop = relationship("Stop")
+
+    __table_args__ = (
+        Index("idx_ob_route_time", "route_id", "trip_datetime"),
+        Index("idx_ob_stop", "stop_id"),
+    )

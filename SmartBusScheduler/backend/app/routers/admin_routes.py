@@ -202,8 +202,8 @@ def delete_route(
     if not route:
         raise HTTPException(status_code=404, detail="Route not found")
 
-    # soft delete
-    route.is_active = False
+    # hard delete with cascade to all other tables (RouteStop, Schedule, etc)
+    db.delete(route)
     db.commit()
 
     return {

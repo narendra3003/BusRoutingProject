@@ -95,6 +95,7 @@ function DriverDataFeed() {
       setNewDriver({
         name: "",
         email: "",
+        password: "password123", // default password
         phone: "",
         license_no: "",
         experience_years: "",

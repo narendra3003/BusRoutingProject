@@ -345,6 +345,73 @@ CREATE TABLE trip_live_status (
         ON DELETE SET NULL
 );
 
+CREATE TABLE templates (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    template_type TEXT DEFAULT 'auto',
+
+    bus_count INTEGER NOT NULL,
+    driver_count INTEGER NOT NULL,
+
+    created_by INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_template_user
+        FOREIGN KEY (created_by)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+);
+
+CREATE TABLE template_records (
+    id SERIAL PRIMARY KEY,
+    template_id INTEGER NOT NULL,
+    route_id TEXT NOT NULL,
+    start_time TIME NOT NULL,
+    -- busNo INTEGER NOT NULL,
+    -- driverNo INTEGER NOT NULL,
+
+    CONSTRAINT fk_template_record_template
+        FOREIGN KEY (template_id)
+        REFERENCES templates(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_template_record_route
+        FOREIGN KEY (route_id)
+        REFERENCES routes(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_template_records_template
+ON template_records(template_id);
+
+CREATE TABLE ob_data (
+    id SERIAL PRIMARY KEY,
+
+    route_id TEXT NOT NULL,
+    stop_id INTEGER NOT NULL,
+
+    boarding_count INTEGER DEFAULT 0,
+    offboarding_count INTEGER DEFAULT 0,
+
+    trip_datetime TIMESTAMP NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_ob_route
+        FOREIGN KEY(route_id)
+        REFERENCES routes(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_ob_stop
+        FOREIGN KEY(stop_id)
+        REFERENCES stops(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ob_route_time ON ob_data(route_id, trip_datetime);
+CREATE INDEX idx_ob_stop ON ob_data(stop_id);
+
 
 COMMIT;
 

@@ -70,7 +70,7 @@ def create_driver(
         name=payload.name,
         email=payload.email,
         phone=payload.phone,
-        pass_hash=hash_password(payload.password),
+        pass_hash=hash_password(payload.password or "password123"),
         role=UserRole.driver
     )
     db.add(user)

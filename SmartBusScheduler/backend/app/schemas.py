@@ -557,3 +557,35 @@ class DispatchResponse(BaseModel):
 
     class Config:
         from_attributes = True  # For SQLAlchemy compatibility
+
+from pydantic import BaseModel
+from datetime import date, time
+from typing import List, Optional
+
+
+class ScheduleGenerationRequest(BaseModel):
+    start_date: date
+    end_date: date
+
+
+class ScheduleLogResponse(BaseModel):
+    trip_date: date
+    start_time: time
+    route_id: str
+    route_name: str
+    driver_name: str
+    bus_code: str
+    status: str
+
+
+class ScheduleSummaryResponse(BaseModel):
+    total_trips: int
+    start_date: date
+    end_date: date
+    routes_processed: int
+
+
+class ScheduleGenerationResponse(BaseModel):
+    message: str
+    summary: ScheduleSummaryResponse
+    logs: List[ScheduleLogResponse]

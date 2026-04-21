@@ -12,7 +12,6 @@ function OverridePage() {
     new_driver_id: "",
     new_bus_id: "",
     new_start_time: "",
-    new_status: "",
     reason: "",
   });
 
@@ -114,32 +113,12 @@ function OverridePage() {
         if (!res.ok) throw new Error("Override failed");
       }
 
-      // Live status update
-      if (overrideData.new_status) {
-        const res = await fetch(
-          `http://localhost:8000/admin/dispatch/${selectedTrip.id}/status`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              status: overrideData.new_status,
-            }),
-          }
-        );
-
-        if (!res.ok) throw new Error("Status update failed");
-      }
-
       setMessage("Override applied successfully!");
       setSelectedTrip(null);
       setOverrideData({
         new_driver_id: "",
         new_bus_id: "",
         new_start_time: "",
-        new_status: "",
         reason: "",
       });
 
@@ -205,7 +184,6 @@ function OverridePage() {
                         new_driver_id: "",
                         new_bus_id: "",
                         new_start_time: t.start_time,
-                        new_status: t.status,
                         reason: "",
                       });
                     }}
@@ -281,25 +259,6 @@ function OverridePage() {
               }
               className="border p-2"
             />
-
-            {/* Status Update */}
-            <select
-              value={overrideData.new_status}
-              onChange={(e) =>
-                setOverrideData({
-                  ...overrideData,
-                  new_status: e.target.value,
-                })
-              }
-              className="border p-2"
-            >
-              <option value="">Select Status</option>
-              <option value="SCHEDULED">Scheduled</option>
-              <option value="DELAYED">Delayed</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
 
             {/* Reason */}
             <input

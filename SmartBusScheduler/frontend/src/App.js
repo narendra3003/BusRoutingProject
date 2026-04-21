@@ -22,6 +22,7 @@ import DispatchPage from "./pages/DispatchPage";
 import DriverLeavePage from "./pages/DriverLeavePage";
 import ConductorDashboard from "./pages/conductor";
 import AdminScheduleManagement from "./pages/schedule";
+import ScheduleGeneration from "./pages/ScheduleManagement";
 
 function App() {
   const location = useLocation();
@@ -112,7 +113,7 @@ function App() {
               <Route path="/schedule"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
-                    <ScheduleManagement />
+                    <ScheduleGeneration />
                   </ProtectedRoute>
                 }
               />
