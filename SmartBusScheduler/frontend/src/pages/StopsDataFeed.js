@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-
+import AdminLayout from "./AdminLayout";
 function StopsDataFeed() {
   // -------------------------
   // States
@@ -212,6 +212,7 @@ function StopsDataFeed() {
   // UI
   // -------------------------
   return (
+    <AdminLayout>
     <div className="p-6 space-y-8">
       <h1 className="text-2xl font-bold">Stops Management</h1>
 
@@ -419,6 +420,7 @@ function StopsDataFeed() {
 
       {message && <p className="text-purple-600">{message}</p>}
     </div>
+    </AdminLayout>
   );
 }
 

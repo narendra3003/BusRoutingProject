@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AdminLayout from "./AdminLayout";
 
 function DispatchPage() {
   const [trips, setTrips] = useState([]);
@@ -91,6 +92,7 @@ function DispatchPage() {
   // UI
   // -------------------------
   return (
+    <AdminLayout>
     <div className="p-6 space-y-8">
 
       <h1 className="text-2xl font-bold">Dispatch Panel</h1>
@@ -208,6 +210,7 @@ function DispatchPage() {
       )}
 
     </div>
+    </AdminLayout>
   );
 }
 

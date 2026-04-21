@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AdminLayout from "./AdminLayout";
 
 function BusesDataFeed() {
   const [buses, setBuses] = useState([]);
@@ -160,6 +161,7 @@ function BusesDataFeed() {
   // UI
   // -------------------------
   return (
+    <AdminLayout>
     <div className="p-6 space-y-8">
 
       <h1 className="text-2xl font-bold">Buses Management</h1>
@@ -340,6 +342,7 @@ function BusesDataFeed() {
 
       {message && <p className="text-purple-600">{message}</p>}
     </div>
+    </AdminLayout>
   );
 }
 

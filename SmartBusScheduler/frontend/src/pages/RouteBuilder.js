@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import AdminLayout from "./AdminLayout";
 function RouteBuilder() {
   const [routes, setRoutes] = useState([]);
   const [stops, setStops] = useState([]);
@@ -168,6 +168,7 @@ function RouteBuilder() {
   // UI
   // -------------------------
   return (
+    <AdminLayout>
     <div className="p-6 space-y-6">
 
       <h1 className="text-2xl font-bold">Route Builder</h1>
@@ -272,6 +273,7 @@ function RouteBuilder() {
 
       {message && <p className="text-purple-600">{message}</p>}
     </div>
+    </AdminLayout>
   );
 }
 

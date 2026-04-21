@@ -1,402 +1,381 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import AdminLayout from "./AdminLayout";
+function ScheduleGeneration() {
+  const [file, setFile] = useState(null);
+  const [overwrite, setOverwrite] = useState(false);
+  const [preview, setPreview] = useState([]);
+  const [templates, setTemplates] = useState([]);
 
-function ScheduleManagement() {
-  const [routes, setRoutes] = useState([]);
-  const [drivers, setDrivers] = useState([]);
-  const [buses, setBuses] = useState([]);
-
-  const [schedule, setSchedule] = useState([]);
-
-  const [filters, setFilters] = useState({
-    date: "",
-    route_id: "",
+  const [dateRange, setDateRange] = useState({
+    start_date: "",
+    end_date: "",
   });
 
-  const [newTrip, setNewTrip] = useState({
-    route_id: "",
-    trip_date: "",
-    start_time: "",
-    driver_id: "",
-    bus_id: "",
-  });
-
-  const [selectedTrip, setSelectedTrip] = useState(null);
-
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [summary, setSummary] = useState(null);
+  const [logs, setLogs] = useState([]);
 
-  // -------------------------
-  // FETCH DATA
-  // -------------------------
-  const fetchInit = async () => {
-    try {
-      const [r, d, b] = await Promise.all([
-        fetch("http://localhost:8000/admin/routes", {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-          },
-        }),
-        fetch("http://localhost:8000/admin/drivers", {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-          },
-        }),
-        fetch("http://localhost:8000/admin/buses", {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-          },
-        }),
-      ]);
+  const token = sessionStorage.getItem("token");
 
-      setRoutes(await r.json());
-      setDrivers(await d.json());
-      setBuses(await b.json());
-    } catch {
-      setMessage("Failed to load data");
+  // =========================
+  // FILE HANDLING
+  // =========================
+
+  const handleFileChange = (e) => {
+    const f = e.target.files[0];
+    setFile(f);
+
+    if (f) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target.result;
+        const rows = text.split("\n").slice(0, 6);
+        setPreview(rows.map((r) => r.split(",")));
+      };
+      reader.readAsText(f);
     }
   };
 
-  useEffect(() => {
-    fetchInit();
-  }, []);
+  // =========================
+  // UPLOAD CSV
+  // =========================
 
-  // -------------------------
-  // CREATE TRIP
-  // -------------------------
-  const createTrip = async () => {
-    if (
-      !newTrip.route_id ||
-      !newTrip.trip_date ||
-      !newTrip.start_time ||
-      !newTrip.driver_id ||
-      !newTrip.bus_id
-    ) {
-      return setMessage("All fields required");
+  const uploadCSV = async () => {
+    if (!file) {
+      setMessage("Please select a CSV file.");
+      return;
     }
 
+    const formData = new FormData();
+    formData.append("file", file);
+
     try {
-      await fetch("http://localhost:8000/admin/schedule", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(newTrip),
+      setLoading(true);
+      setMessage("");
 
-        /*
-        REQUEST:
+      const res = await fetch(
+        `http://localhost:8000/admin/schedule/upload-observations?overwrite=${overwrite}`,
         {
-          route_id,
-          trip_date,
-          start_time,
-          driver_id,
-          bus_id
-        }
-        */
-      });
-
-      setMessage("Trip created!");
-      setNewTrip({
-        route_id: "",
-        trip_date: "",
-        start_time: "",
-        driver_id: "",
-        bus_id: "",
-      });
-
-      fetchSchedule();
-    } catch {
-      setMessage("Create failed");
-    }
-  };
-
-  // -------------------------
-  // FETCH SCHEDULE
-  // -------------------------
-  const fetchSchedule = async () => {
-    try {
-      let url = "";
-
-      if (filters.date) {
-        url = `http://localhost:8000/schedule/date/${filters.date}`;
-      } else if (filters.route_id) {
-        url = `http://localhost:8000/schedule/route/${filters.route_id}`;
-      } else {
-        return;
-      }
-
-      const res = await fetch(url);
-      const data = await res.json();
-
-      setSchedule(data);
-
-      /*
-      RESPONSE:
-      [
-        {
-          id: 1,
-          start_time: "10:00",
-          route_name: "...",
-          driver_name: "...",
-          bus_code: "...",
-          status: "scheduled"
-        }
-      ]
-      */
-    } catch {
-      setMessage("Failed to fetch schedule");
-    }
-  };
-
-  // -------------------------
-  // UPDATE TRIP
-  // -------------------------
-  const updateTrip = async () => {
-    try {
-      await fetch(
-        `http://localhost:8000/admin/schedule/${selectedTrip.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(selectedTrip),
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
         }
       );
 
-      setMessage("Updated!");
-      setSelectedTrip(null);
-      fetchSchedule();
+      if (!res.ok) {
+        throw new Error("API failed");
+      }
+      const data = await res.json();
+      setMessage(data.message || "CSV uploaded successfully.");
     } catch {
-      setMessage("Update failed");
+      setMessage("CSV upload failed.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // -------------------------
-  // UI
-  // -------------------------
+  // =========================
+  // GENERATE TEMPLATES
+  // =========================
+
+  const generateTemplates = async () => {
+    try {
+      setLoading(true);
+      setMessage("Generating templates...");
+
+      const res = await fetch(
+        "http://localhost:8000/admin/schedule/generate-templates",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("API failed");
+      }
+      const data = await res.json();
+      setTemplates(data.templates || []);
+      setMessage("Templates generated.");
+    } catch {
+      setMessage("Template generation failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================
+  // GENERATE FINAL SCHEDULE
+  // =========================
+
+  const generateSchedule = async () => {
+    const { start_date, end_date } = dateRange;
+
+    if (!start_date || !end_date) {
+      setMessage("Select valid date range.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setMessage("Generating schedule...");
+
+      const res = await fetch(
+        "http://localhost:8000/admin/schedule/generate-from-observations",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ start_date, end_date }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("API failed");  
+      }
+      const data = await res.json();
+      setSummary(data.summary);
+      setLogs(data.logs || []);
+      setMessage("Schedule generated.");
+    } catch {
+      setMessage("Schedule generation failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================
+  // DOWNLOAD CSV
+  // =========================
+
+  const downloadLogsCSV = () => {
+    if (!logs.length) return;
+
+    const headers = [
+      "trip_date",
+      "start_time",
+      "route_name",
+      "driver_name",
+      "bus_code",
+      "status",
+    ];
+
+    const csvRows = [
+      headers.join(","),
+      ...logs.map((log) =>
+        headers.map((h) => log[h] ?? "").join(",")
+      ),
+    ];
+
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv",
+    });
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "schedule.csv";
+    a.click();
+  };
+
   return (
-    <div className="p-6 space-y-8">
+    <AdminLayout>
+    <div className="p-6 space-y-8 bg-gray-100 min-h-screen">
+      <h1 className="text-3xl font-bold">
+        Smart Schedule Generation
+      </h1>
+{/* STEP 1: UPLOAD */}
+<div className="bg-white p-6 rounded shadow">
+  <h2 className="text-xl font-semibold mb-4">
+    Step 1: Upload OB CSV
+  </h2>
 
-      <h1 className="text-2xl font-bold">Schedule Management</h1>
+  <input type="file" accept=".csv" onChange={handleFileChange} />
 
-      {/* CREATE TRIP */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">Create Trip</h2>
+  {/* ✅ NEW: Overwrite Toggle */}
+  <div className="mt-3 flex items-center gap-2">
+    <input
+      type="checkbox"
+      id="overwrite"
+      checked={overwrite}
+      onChange={(e) => setOverwrite(e.target.checked)}
+    />
+    <label htmlFor="overwrite" className="text-sm">
+      Overwrite existing data
+    </label>
+  </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+  <button
+  onClick={() => {
+    if (overwrite) {
+      const confirmDelete = window.confirm(
+        "This will DELETE all existing OB data. Continue?"
+      );
+      if (!confirmDelete) return;
+    }
+    uploadCSV();
+  }}
+    className="ml-4 mt-3 bg-blue-600 text-white px-4 py-2 rounded"
+  >
+    Upload
+  </button>
 
-          <select
-            value={newTrip.route_id}
-            onChange={(e) =>
-              setNewTrip({ ...newTrip, route_id: e.target.value })
-            }
-            className="border p-2"
-          >
-            <option value="">Route</option>
-            {routes.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
+  {/* ✅ Mode indicator */}
+  <p className="text-sm mt-2 text-gray-600">
+    Mode: {overwrite ? "Overwrite (delete old data)" : "Append"}
+  </p>
 
-          <input
-            type="date"
-            value={newTrip.trip_date}
-            onChange={(e) =>
-              setNewTrip({ ...newTrip, trip_date: e.target.value })
-            }
-            className="border p-2"
-          />
+  {preview.length > 0 && (
+    <div className="mt-4 overflow-auto">
+      <p className="font-semibold mb-2">Preview:</p>
+      <table className="border">
+        <tbody>
+          {preview.map((row, i) => (
+            <tr key={i}>
+              {row.map((col, j) => (
+                <td key={j} className="border px-2 py-1">
+                  {col}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</div>
 
-          <input
-            type="time"
-            value={newTrip.start_time}
-            onChange={(e) =>
-              setNewTrip({ ...newTrip, start_time: e.target.value })
-            }
-            className="border p-2"
-          />
-
-          <select
-            value={newTrip.driver_id}
-            onChange={(e) =>
-              setNewTrip({ ...newTrip, driver_id: e.target.value })
-            }
-            className="border p-2"
-          >
-            <option value="">Driver</option>
-            {drivers.map((d) => (
-              <option key={d.user_id} value={d.user_id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={newTrip.bus_id}
-            onChange={(e) =>
-              setNewTrip({ ...newTrip, bus_id: e.target.value })
-            }
-            className="border p-2"
-          >
-            <option value="">Bus</option>
-            {buses.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.code}
-              </option>
-            ))}
-          </select>
-
-        </div>
+      {/* STEP 2: TEMPLATE */}
+      <div className="bg-white p-6 rounded shadow">
+        <h2 className="text-xl font-semibold mb-4">
+          Step 2: Generate Templates
+        </h2>
 
         <button
-          onClick={createTrip}
-          className="mt-4 bg-purple-600 text-white px-4 py-2"
+          onClick={generateTemplates}
+          className="bg-purple-600 text-white px-4 py-2 rounded"
         >
-          Create Trip
+          Generate Templates
         </button>
+
+        {templates.length > 0 && (
+          <div className="mt-4">
+            <h3 className="font-semibold mb-2">Templates</h3>
+            <table className="w-full border text-center">
+              <thead>
+                <tr>
+                  <th className="border p-2">Type</th>
+                  <th className="border p-2">Route</th>
+                  <th className="border p-2">Start Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {templates.map((t, i) => (
+                  <tr key={i}>
+                    <td className="border p-2">{t.template_type}</td>
+                    <td className="border p-2">{t.route_id}</td>
+                    <td className="border p-2">{t.start_time}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* FILTERS */}
-      <div className="bg-white p-4 shadow rounded flex gap-4">
+      {/* STEP 3: DATE RANGE */}
+      <div className="bg-white p-6 rounded shadow">
+        <h2 className="text-xl font-semibold mb-4">
+          Step 3: Select Date Range
+        </h2>
+
         <input
           type="date"
-          value={filters.date}
           onChange={(e) =>
-            setFilters({ ...filters, date: e.target.value })
+            setDateRange({ ...dateRange, start_date: e.target.value })
           }
-          className="border p-2"
+        />
+        <input
+          type="date"
+          className="ml-4"
+          onChange={(e) =>
+            setDateRange({ ...dateRange, end_date: e.target.value })
+          }
         />
 
-        <select
-          value={filters.route_id}
-          onChange={(e) =>
-            setFilters({ ...filters, route_id: e.target.value })
-          }
-          className="border p-2"
-        >
-          <option value="">All Routes</option>
-          {routes.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-
         <button
-          onClick={fetchSchedule}
-          className="bg-blue-600 text-white px-4"
+          onClick={generateSchedule}
+          className="ml-4 bg-green-600 text-white px-4 py-2 rounded"
         >
-          Load
+          Generate Schedule
         </button>
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white p-6 shadow rounded">
-        <table className="w-full border text-center">
-          <thead className="bg-gray-100">
-            <tr>
-              <th>Time</th>
-              <th>Route</th>
-              <th>Driver</th>
-              <th>Bus</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {schedule.map((t) => (
-              <tr key={t.id} className="border-t">
-                <td>{t.start_time}</td>
-                <td>{t.route_name}</td>
-                <td>{t.driver_name}</td>
-                <td>{t.bus_code}</td>
-                <td>{t.status}</td>
-
-                <td>
-                  <button
-                    onClick={() => setSelectedTrip(t)}
-                    className="bg-yellow-500 text-white px-2"
-                  >
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* EDIT */}
-      {selectedTrip && (
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-4">Edit Trip</h2>
-
-          <div className="grid grid-cols-2 gap-4">
-
-            <input
-              type="time"
-              value={selectedTrip.start_time}
-              onChange={(e) =>
-                setSelectedTrip({
-                  ...selectedTrip,
-                  start_time: e.target.value,
-                })
-              }
-              className="border p-2"
-            />
-
-            <select
-              value={selectedTrip.driver_id}
-              onChange={(e) =>
-                setSelectedTrip({
-                  ...selectedTrip,
-                  driver_id: e.target.value,
-                })
-              }
-              className="border p-2"
-            >
-              {drivers.map((d) => (
-                <option key={d.user_id} value={d.user_id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedTrip.bus_id}
-              onChange={(e) =>
-                setSelectedTrip({
-                  ...selectedTrip,
-                  bus_id: e.target.value,
-                })
-              }
-              className="border p-2"
-            >
-              {buses.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.code}
-                </option>
-              ))}
-            </select>
-
-          </div>
-
-          <button
-            onClick={updateTrip}
-            className="mt-4 bg-green-600 text-white px-4 py-2"
-          >
-            Save Changes
-          </button>
+      {/* SUMMARY */}
+      {summary && (
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-xl font-semibold">Summary</h2>
+          <p>Total Trips: {summary.total_trips}</p>
         </div>
       )}
 
-      {message && <p className="text-purple-600">{message}</p>}
+      {/* LOGS */}
+      {logs.length > 0 && (
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-xl font-semibold mb-4">
+            Generated Trips
+          </h2>
+
+          <button
+            onClick={downloadLogsCSV}
+            className="mb-3 bg-gray-700 text-white px-3 py-1 rounded"
+          >
+            Download CSV
+          </button>
+
+          <div className="overflow-auto max-h-[400px]">
+            <table className="w-full border text-center">
+              <thead>
+                <tr>
+                  <th className="border p-2">Date</th>
+                  <th className="border p-2">Time</th>
+                  <th className="border p-2">Route</th>
+                  <th className="border p-2">Driver</th>
+                  <th className="border p-2">Bus</th>
+                  <th className="border p-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log, i) => (
+                  <tr key={i}>
+                    <td className="border p-2">{log.trip_date}</td>
+                    <td className="border p-2">{log.start_time}</td>
+                    <td className="border p-2">{log.route_name}</td>
+                    <td className="border p-2">{log.driver_name}</td>
+                    <td className="border p-2">{log.bus_code}</td>
+                    <td className="border p-2">{log.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* MESSAGE */}
+      {message && (
+        <div className="bg-purple-100 text-purple-700 p-3 rounded">
+          {message}
+        </div>
+      )}
     </div>
+    </AdminLayout>
   );
 }
 
-export default ScheduleManagement;
+export default ScheduleGeneration;

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import AdminLayout from "./AdminLayout";
+import EditRouteModal from "./EditRouteModal";
 
 function RoutesDataFeed() {
   const [routes, setRoutes] = useState([]);
@@ -156,72 +158,109 @@ function RoutesDataFeed() {
   // UI
   // -------------------------
   return (
+    <AdminLayout>
     <div className="p-6 space-y-8">
 
       <h1 className="text-2xl font-bold">Routes Management</h1>
 
-      {/* ADD ROUTE */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">Create Route</h2>
+      <div className="bg-white p-6 rounded-xl shadow-md">
+  
+  {/* HEADER */}
+  <div className="mb-5">
+    <h2 className="text-lg font-semibold text-gray-800">
+      Create Route
+    </h2>
+    <p className="text-sm text-gray-500">
+      Add a new route to the system
+    </p>
+  </div>
 
-        <div className="grid grid-cols-2 gap-4">
+  {/* FORM GRID */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-          <input
-            placeholder="Route ID (e.g. 101_UP)"
-            value={newRoute.id}
-            onChange={(e) =>
-              setNewRoute({ ...newRoute, id: e.target.value })
-            }
-            className="border p-2"
-          />
+    {/* ROUTE ID */}
+    <div>
+      <label className="block text-sm font-medium text-gray-600 mb-1">
+        Route ID
+      </label>
+      <input
+        placeholder="e.g. 101_UP"
+        value={newRoute.id}
+        onChange={(e) =>
+          setNewRoute({ ...newRoute, id: e.target.value })
+        }
+        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+      />
+    </div>
 
-          <input
-            placeholder="Route Name"
-            value={newRoute.name}
-            onChange={(e) =>
-              setNewRoute({ ...newRoute, name: e.target.value })
-            }
-            className="border p-2"
-          />
+    {/* ROUTE NAME */}
+    <div>
+      <label className="block text-sm font-medium text-gray-600 mb-1">
+        Route Name
+      </label>
+      <input
+        placeholder="Enter route name"
+        value={newRoute.name}
+        onChange={(e) =>
+          setNewRoute({ ...newRoute, name: e.target.value })
+        }
+        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+      />
+    </div>
 
-          <select
-            value={newRoute.start_stop_id}
-            onChange={(e) =>
-              setNewRoute({ ...newRoute, start_stop_id: e.target.value })
-            }
-            className="border p-2"
-          >
-            <option value="">Select Start Stop</option>
-            {stops.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+    {/* START STOP */}
+    <div>
+      <label className="block text-sm font-medium text-gray-600 mb-1">
+        Start Stop
+      </label>
+      <select
+        value={newRoute.start_stop_id}
+        onChange={(e) =>
+          setNewRoute({ ...newRoute, start_stop_id: e.target.value })
+        }
+        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+      >
+        <option value="">Select Start Stop</option>
+        {stops.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+    </div>
 
-          <select
-            value={newRoute.end_stop_id}
-            onChange={(e) =>
-              setNewRoute({ ...newRoute, end_stop_id: e.target.value })
-            }
-            className="border p-2"
-          >
-            <option value="">Select End Stop</option>
-            {stops.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
+    {/* END STOP */}
+    <div>
+      <label className="block text-sm font-medium text-gray-600 mb-1">
+        End Stop
+      </label>
+      <select
+        value={newRoute.end_stop_id}
+        onChange={(e) =>
+          setNewRoute({ ...newRoute, end_stop_id: e.target.value })
+        }
+        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+      >
+        <option value="">Select End Stop</option>
+        {stops.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
 
-        <button
-          onClick={addRoute}
-          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded"
-        >
-          Create Route
-        </button>
-      </div>
+  {/* ACTION BUTTON */}
+  <div className="mt-6 flex justify-end">
+    <button
+      onClick={addRoute}
+      className="px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-purple-700 transition active:scale-95"
+    >
+      + Create Route
+    </button>
+  </div>
+</div>
 
       {/* ROUTES TABLE */}
       <div className="bg-white p-6 shadow rounded">
@@ -234,109 +273,86 @@ function RoutesDataFeed() {
           className="border p-2 mb-4 w-full"
         />
 
-        <table className="w-full border text-center">
-          <thead className="bg-gray-100">
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Start</th>
-              <th>End</th>
-              <th>Distance</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <table className="w-full text-sm text-gray-700">
 
-          <tbody>
-            {filteredRoutes.map((r) => (
-              <tr key={r.id} className="border-t">
-                <td>{r.id}</td>
-                <td>{r.name}</td>
-                <td>{r.start_stop_name || r.start_stop_id}</td>
-                <td>{r.end_stop_name || r.end_stop_id}</td>
-                <td>{r.distance_km || "-"}</td>
-
-                <td className="space-x-2">
-                  <button
-                    onClick={() => setSelectedRoute(r)}
-                    className="bg-yellow-500 text-white px-2 py-1"
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={() => deleteRoute(r.id)}
-                    className="bg-red-600 text-white px-2 py-1"
-                  >
-                    Delete
-                  </button>
-                </td>
+            {/* HEADER */}
+            <thead className="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider">
+              <tr>
+                <th className="px-6 py-3 text-left">ID</th>
+                <th className="px-6 py-3 text-left">Route Name</th>
+                <th className="px-6 py-3 text-left">Start</th>
+                <th className="px-6 py-3 text-left">End</th>
+                <th className="px-6 py-3">Distance</th>
+                <th className="px-6 py-3 text-center">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            {/* BODY */}
+            <tbody className="divide-y">
+              {filteredRoutes.map((r) => (
+                <tr
+                  key={r.id}
+                  className="hover:bg-gray-50 transition duration-150"
+                >
+                  <td className="px-6 py-4 font-medium text-gray-900">
+                    #{r.id}
+                  </td>
+
+                  <td className="px-6 py-4 font-semibold text-gray-800">
+                    {r.name}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    {r.start_stop_name || r.start_stop_id}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    {r.end_stop_name || r.end_stop_id}
+                  </td>
+
+                  {/* DISTANCE BADGE */}
+                  <td className="px-6 py-4 text-center">
+                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                      {r.distance_km ? `${r.distance_km} km` : "-"}
+                    </span>
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td className="px-6 py-4 flex justify-center gap-2">
+                    <button
+                      onClick={() => setSelectedRoute(r)}
+                      className="px-3 py-1.5 bg-yellow-400 text-white text-xs font-medium rounded-md hover:bg-yellow-500 transition active:scale-95"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => deleteRoute(r.id)}
+                      className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-md hover:bg-red-600 transition active:scale-95"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
       </div>
 
       {/* EDIT */}
-      {selectedRoute && (
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-4">Edit Route</h2>
-
-          <div className="grid grid-cols-2 gap-4">
-
-            <input
-              value={selectedRoute.name}
-              onChange={(e) =>
-                setSelectedRoute({ ...selectedRoute, name: e.target.value })
-              }
-              className="border p-2"
-            />
-
-            <select
-              value={selectedRoute.start_stop_id}
-              onChange={(e) =>
-                setSelectedRoute({
-                  ...selectedRoute,
-                  start_stop_id: e.target.value,
-                })
-              }
-              className="border p-2"
-            >
-              {stops.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedRoute.end_stop_id}
-              onChange={(e) =>
-                setSelectedRoute({
-                  ...selectedRoute,
-                  end_stop_id: e.target.value,
-                })
-              }
-              className="border p-2"
-            >
-              {stops.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={updateRoute}
-            className="mt-4 bg-green-600 text-white px-4 py-2"
-          >
-            Save Changes
-          </button>
-        </div>
-      )}
+      <EditRouteModal
+      selectedRoute={selectedRoute}
+      setSelectedRoute={setSelectedRoute}
+      updateRoute={updateRoute}
+      stops={stops}
+    />
 
       {message && <p className="text-purple-600">{message}</p>}
     </div>
+    </AdminLayout>
   );
 }
 

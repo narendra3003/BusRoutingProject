@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import AdminLayout from "./AdminLayout";
 function DriverDataFeed() {
   const [drivers, setDrivers] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
@@ -171,6 +171,7 @@ function DriverDataFeed() {
   // UI
   // -------------------------
   return (
+    <AdminLayout>
     <div className="p-6 space-y-8">
 
       <h1 className="text-2xl font-bold">Drivers Management</h1>
@@ -371,6 +372,7 @@ function DriverDataFeed() {
 
       {message && <p className="text-purple-600">{message}</p>}
     </div>
+    </AdminLayout>
   );
 }
 
