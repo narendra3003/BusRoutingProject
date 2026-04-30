@@ -220,17 +220,20 @@ function StopsDataFeed() {
       <div className="grid md:grid-cols-2 gap-6">
 
         {/* ADD STOP */}
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-4">Add Stop</h2>
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            Add Stop
+          </h2>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
             <input
               placeholder="Name"
               value={newStop.name}
               onChange={(e) =>
                 setNewStop({ ...newStop, name: e.target.value })
               }
-              className="border p-2 rounded"
+              className="input"
             />
 
             <input
@@ -239,7 +242,7 @@ function StopsDataFeed() {
               onChange={(e) =>
                 setNewStop({ ...newStop, zone: e.target.value })
               }
-              className="border p-2 rounded"
+              className="input"
             />
 
             <input
@@ -249,7 +252,7 @@ function StopsDataFeed() {
               onChange={(e) =>
                 setNewStop({ ...newStop, lat: e.target.value })
               }
-              className="border p-2 rounded"
+              className="input"
             />
 
             <input
@@ -259,7 +262,7 @@ function StopsDataFeed() {
               onChange={(e) =>
                 setNewStop({ ...newStop, lon: e.target.value })
               }
-              className="border p-2 rounded"
+              className="input"
             />
 
             <select
@@ -267,7 +270,7 @@ function StopsDataFeed() {
               onChange={(e) =>
                 setNewStop({ ...newStop, type: e.target.value })
               }
-              className="border p-2 rounded col-span-2"
+              className="input col-span-1 md:col-span-2"
             >
               <option value="stop">Stop</option>
               <option value="terminal">Terminal</option>
@@ -277,15 +280,17 @@ function StopsDataFeed() {
 
           <button
             onClick={addStop}
-            className="mt-4 bg-purple-600 text-white px-4 py-2 rounded"
+            className="mt-5 w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
           >
-            Add Stop
+            + Add Stop
           </button>
         </div>
 
         {/* CSV */}
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-4">Upload CSV</h2>
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            Upload CSV
+          </h2>
 
           <input
             type="file"
@@ -299,124 +304,184 @@ function StopsDataFeed() {
             onClick={() => fileInputRef.current.click()}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className="border-2 border-dashed p-8 text-center cursor-pointer"
+            className="border-2 border-dashed rounded-xl p-10 text-center cursor-pointer hover:bg-gray-50 transition"
           >
-            {csvFile ? csvFile.name : "Click or Drag CSV"}
+            <p className="text-sm text-gray-500">
+              {csvFile ? csvFile.name : "Click or Drag CSV here"}
+            </p>
           </div>
 
           <button
             onClick={uploadCSV}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+            className="mt-5 w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
-            Upload
+            Upload CSV
           </button>
         </div>
       </div>
 
       {/* TABLE */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">All Stops</h2>
+      <div className="bg-white p-6 rounded-xl shadow-md">
+
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          All Stops
+        </h2>
 
         <input
           placeholder="Search by name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border p-2 mb-4 w-full"
+          className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:ring-2 focus:ring-purple-500 outline-none"
         />
 
-        <table className="w-full border">
-          <thead>
-            <tr className="bg-gray-100">
-              <th>ID</th>
-              <th>Name</th>
-              <th>Zone</th>
-              <th>Lat</th>
-              <th>Lon</th>
-              <th>Type</th>
-              <th>Active</th>
-              <th>Actions</th>
+        <table className="w-full text-sm text-gray-700">
+          <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+            <tr>
+              <th className="px-4 py-3 text-left">ID</th>
+              <th className="px-4 py-3 text-left">Name</th>
+              <th className="px-4 py-3">Zone</th>
+              <th className="px-4 py-3">Lat</th>
+              <th className="px-4 py-3">Lon</th>
+              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
 
-          <tbody>
+          <tbody className="divide-y">
             {filteredStops.map((s) => (
-              <tr key={s.id} className="text-center border-t">
-                <td>{s.id}</td>
-                <td>{s.name}</td>
-                <td>{s.zone}</td>
-                <td>{s.lat}</td>
-                <td>{s.lon}</td>
-                <td>{s.type}</td>
-                <td>{s.is_active === true ? "Yes" : "No"}</td>
+              <tr key={s.id} className="hover:bg-gray-50 transition">
 
-                <td className="space-x-2">
+                <td className="px-4 py-3 font-medium">#{s.id}</td>
+
+                <td className="px-4 py-3 font-semibold text-gray-800">
+                  {s.name}
+                </td>
+
+                <td className="px-4 py-3">{s.zone}</td>
+                <td className="px-4 py-3">{s.lat}</td>
+                <td className="px-4 py-3">{s.lon}</td>
+
+                {/* TYPE BADGE */}
+                <td className="px-4 py-3">
+                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
+                    {s.type}
+                  </span>
+                </td>
+
+                {/* STATUS BADGE */}
+                <td className="px-4 py-3">
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      s.is_active
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {s.is_active ? "Active" : "Inactive"}
+                  </span>
+                </td>
+
+                {/* ACTIONS */}
+                <td className="px-4 py-3 flex justify-center gap-2">
                   <button
                     onClick={() => setSelectedStop(s)}
-                    className="bg-yellow-500 text-white px-2 py-1"
+                    className="px-3 py-1 text-xs bg-yellow-400 text-white rounded hover:bg-yellow-500 transition"
                   >
                     Edit
                   </button>
 
                   <button
                     onClick={() => deleteStop(s.id)}
-                    className="bg-red-600 text-white px-2 py-1"
+                    className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition"
                   >
                     Delete
                   </button>
                 </td>
               </tr>
             ))}
+
+            {filteredStops.length === 0 && (
+              <tr>
+                <td colSpan="8" className="text-center py-6 text-gray-400">
+                  No stops found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-
       {/* EDIT */}
       {selectedStop && (
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-4">Edit Stop</h2>
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
 
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              value={selectedStop.name}
-              onChange={(e) =>
-                setSelectedStop({ ...selectedStop, name: e.target.value })
-              }
-              className="border p-2"
-            />
+    {/* BACKDROP */}
+    <div
+      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      onClick={() => setSelectedStop(null)}
+    ></div>
 
-            <input
-              value={selectedStop.zone || ""}
-              onChange={(e) =>
-                setSelectedStop({ ...selectedStop, zone: e.target.value })
-              }
-              className="border p-2"
-            />
+    {/* MODAL */}
+    <div className="relative bg-white w-full max-w-lg rounded-xl shadow-lg p-6">
 
-            <input
-              value={selectedStop.lat}
-              onChange={(e) =>
-                setSelectedStop({ ...selectedStop, lat: e.target.value })
-              }
-              className="border p-2"
-            />
+      <h2 className="text-lg font-semibold mb-4">Edit Stop</h2>
 
-            <input
-              value={selectedStop.lon}
-              onChange={(e) =>
-                setSelectedStop({ ...selectedStop, lon: e.target.value })
-              }
-              className="border p-2"
-            />
-          </div>
+      <div className="grid grid-cols-2 gap-4">
 
-          <button
-            onClick={updateStop}
-            className="mt-4 bg-green-600 text-white px-4 py-2"
-          >
-            Save
-          </button>
-        </div>
-      )}
+        <input
+          value={selectedStop.name}
+          onChange={(e) =>
+            setSelectedStop({ ...selectedStop, name: e.target.value })
+          }
+          className="input"
+        />
+
+        <input
+          value={selectedStop.zone || ""}
+          onChange={(e) =>
+            setSelectedStop({ ...selectedStop, zone: e.target.value })
+          }
+          className="input"
+        />
+
+        <input
+          value={selectedStop.lat}
+          onChange={(e) =>
+            setSelectedStop({ ...selectedStop, lat: e.target.value })
+          }
+          className="input"
+        />
+
+        <input
+          value={selectedStop.lon}
+          onChange={(e) =>
+            setSelectedStop({ ...selectedStop, lon: e.target.value })
+          }
+          className="input"
+        />
+      </div>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          onClick={() => setSelectedStop(null)}
+          className="px-4 py-2 border rounded-lg"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={() => {
+            updateStop();
+            setSelectedStop(null);
+          }}
+          className="px-5 py-2 bg-green-600 text-white rounded-lg"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {message && <p className="text-purple-600">{message}</p>}
     </div>

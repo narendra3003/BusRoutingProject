@@ -177,10 +177,12 @@ function DriverDataFeed() {
       <h1 className="text-2xl font-bold">Drivers Management</h1>
 
       {/* ADD DRIVER */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">Add Driver</h2>
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          Add Driver
+        </h2>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           <input
             placeholder="Name"
@@ -188,7 +190,7 @@ function DriverDataFeed() {
             onChange={(e) =>
               setNewDriver({ ...newDriver, name: e.target.value })
             }
-            className="border p-2"
+            className="input"
           />
 
           <input
@@ -197,7 +199,7 @@ function DriverDataFeed() {
             onChange={(e) =>
               setNewDriver({ ...newDriver, email: e.target.value })
             }
-            className="border p-2"
+            className="input"
           />
 
           <input
@@ -206,7 +208,7 @@ function DriverDataFeed() {
             onChange={(e) =>
               setNewDriver({ ...newDriver, phone: e.target.value })
             }
-            className="border p-2"
+            className="input"
           />
 
           <input
@@ -215,7 +217,7 @@ function DriverDataFeed() {
             onChange={(e) =>
               setNewDriver({ ...newDriver, license_no: e.target.value })
             }
-            className="border p-2"
+            className="input"
           />
 
           <input
@@ -228,7 +230,7 @@ function DriverDataFeed() {
                 experience_years: e.target.value,
               })
             }
-            className="border p-2"
+            className="input"
           />
 
           <input
@@ -240,137 +242,189 @@ function DriverDataFeed() {
                 joining_date: e.target.value,
               })
             }
-            className="border p-2"
+            className="input"
           />
         </div>
 
         <button
           onClick={addDriver}
-          className="mt-4 bg-purple-600 text-white px-4 py-2"
+          className="mt-5 w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
         >
-          Add Driver
+          + Add Driver
         </button>
       </div>
 
       {/* TABLE */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">All Drivers</h2>
+      <div className="bg-white p-6 rounded-xl shadow-md">
+
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          All Drivers
+        </h2>
 
         <input
           placeholder="Search drivers..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border p-2 mb-4 w-full"
+          className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:ring-2 focus:ring-purple-500 outline-none"
         />
 
-        <table className="w-full border text-center">
-          <thead className="bg-gray-100">
+        <table className="w-full text-sm text-gray-700">
+          <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>License</th>
-              <th>Experience</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th className="px-4 py-3 text-left">Name</th>
+              <th className="px-4 py-3 text-left">Email</th>
+              <th className="px-4 py-3">License</th>
+              <th className="px-4 py-3">Experience</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
 
-          <tbody>
+          <tbody className="divide-y">
             {filteredDrivers.map((d) => (
-              <tr key={d.user_id} className="border-t">
-                <td>{d.name}</td>
-                <td>{d.email}</td>
-                <td>{d.license_no}</td>
-                <td>{d.experience_years}</td>
-                <td>{d.status}</td>
+              <tr key={d.user_id} className="hover:bg-gray-50 transition">
 
-                <td className="space-x-2">
+                <td className="px-4 py-3 font-semibold text-gray-800">
+                  {d.name}
+                </td>
+
+                <td className="px-4 py-3 text-gray-600">
+                  {d.email}
+                </td>
+
+                <td className="px-4 py-3">{d.license_no}</td>
+                <td className="px-4 py-3">{d.experience_years} yrs</td>
+
+                {/* STATUS BADGE */}
+                <td className="px-4 py-3">
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      d.status === "active"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {d.status}
+                  </span>
+                </td>
+
+                {/* ACTIONS */}
+                <td className="px-4 py-3 flex justify-center gap-2">
+
                   <button
                     onClick={() => setSelectedDriver(d)}
-                    className="bg-yellow-500 text-white px-2 py-1"
+                    className="px-3 py-1 text-xs bg-yellow-400 text-white rounded hover:bg-yellow-500 transition"
                   >
                     Edit
                   </button>
 
                   <button
                     onClick={() => toggleStatus(d)}
-                    className="bg-blue-600 text-white px-2 py-1"
+                    className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                   >
                     Toggle
                   </button>
                 </td>
               </tr>
             ))}
+
+            {filteredDrivers.length === 0 && (
+              <tr>
+                <td colSpan="6" className="text-center py-6 text-gray-400">
+                  No drivers found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       {/* EDIT */}
       {selectedDriver && (
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-4">Edit Driver</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
 
-          <div className="grid grid-cols-2 gap-4">
-            <label className="text-left">Name:</label>
-            <input
-              value={selectedDriver.name}
-              onChange={(e) =>
-                setSelectedDriver({
-                  ...selectedDriver,
-                  name: e.target.value,
-                })
-              }
-              className="border p-2"
-            />
+          {/* BACKDROP */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setSelectedDriver(null)}
+          ></div>
 
-              <label className="text-left">Email:</label>
-            <input
-              value={selectedDriver.email || ""}
-              onChange={(e) =>
-                setSelectedDriver({
-                  ...selectedDriver,
-                  phone: e.target.value,
-                })
-              }
-              className="border p-2"
-            />
+          {/* MODAL */}
+          <div className="relative bg-white w-full max-w-lg rounded-xl shadow-lg p-6">
 
-            <label className="text-left">License Number:</label>
-            <input
-              value={selectedDriver.license_no}
-              onChange={(e) =>
-                setSelectedDriver({
-                  ...selectedDriver,
-                  license_no: e.target.value,
-                })
-              }
-              className="border p-2"
-            />
+            <h2 className="text-lg font-semibold mb-4">
+              Edit Driver
+            </h2>
 
-            <label className="text-left">Experience (years):</label>
-            <input
-              type="number"
-              value={selectedDriver.experience_years}
-              onChange={(e) =>
-                setSelectedDriver({
-                  ...selectedDriver,
-                  experience_years: e.target.value,
-                })
-              }
-              className="border p-2"
-            />
+            <div className="grid grid-cols-2 gap-4">
+
+              <input
+                value={selectedDriver.name}
+                onChange={(e) =>
+                  setSelectedDriver({
+                    ...selectedDriver,
+                    name: e.target.value,
+                  })
+                }
+                className="input"
+              />
+
+              <input
+                value={selectedDriver.email || ""}
+                onChange={(e) =>
+                  setSelectedDriver({
+                    ...selectedDriver,
+                    email: e.target.value,
+                  })
+                }
+                className="input"
+              />
+
+              <input
+                value={selectedDriver.license_no}
+                onChange={(e) =>
+                  setSelectedDriver({
+                    ...selectedDriver,
+                    license_no: e.target.value,
+                  })
+                }
+                className="input"
+              />
+
+              <input
+                type="number"
+                value={selectedDriver.experience_years}
+                onChange={(e) =>
+                  setSelectedDriver({
+                    ...selectedDriver,
+                    experience_years: e.target.value,
+                  })
+                }
+                className="input"
+              />
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setSelectedDriver(null)}
+                className="px-4 py-2 border rounded-lg"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => {
+                  updateDriver();
+                  setSelectedDriver(null);
+                }}
+                className="px-5 py-2 bg-green-600 text-white rounded-lg"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
-
-          <button
-            onClick={updateDriver}
-            className="mt-4 bg-green-600 text-white px-4 py-2"
-          >
-            Save Changes
-          </button>
         </div>
       )}
-
-      {message && <p className="text-purple-600">{message}</p>}
     </div>
     </AdminLayout>
   );

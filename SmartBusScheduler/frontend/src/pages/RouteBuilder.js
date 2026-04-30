@@ -169,110 +169,138 @@ function RouteBuilder() {
   // -------------------------
   return (
     <AdminLayout>
-    <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6">
 
-      <h1 className="text-2xl font-bold">Route Builder</h1>
-
-      {/* SELECT ROUTE */}
-      <div className="bg-white p-4 shadow rounded">
-        <select
-          value={selectedRoute}
-          onChange={(e) => setSelectedRoute(e.target.value)}
-          className="border p-2 w-full"
-        >
-          <option value="">Select Route</option>
-          {routes.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name} ({r.id})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* MAIN GRID */}
-      <div className="grid grid-cols-2 gap-6">
-
-        {/* LEFT: ALL STOPS */}
-        <div className="bg-white p-4 shadow rounded">
-          <h2 className="font-semibold mb-2">All Stops</h2>
-
-          <input
-            placeholder="Search stops..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border p-2 w-full mb-3"
-          />
-
-          <div className="max-h-96 overflow-y-auto space-y-2">
-            {filteredStops.map((s) => (
-              <div
-                key={s.id}
-                className="flex justify-between border p-2 rounded"
-              >
-                <span>{s.name}</span>
-
-                <button
-                  onClick={() => addStop(s.id)}
-                  className="bg-blue-600 text-white px-2"
-                >
-                  Add →
-                </button>
-              </div>
-            ))}
-          </div>
+        {/* HEADER */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Route Builder
+          </h1>
+          <p className="text-sm text-gray-500">
+            Create and manage ordered stops for each route
+          </p>
         </div>
 
-        {/* RIGHT: SELECTED STOPS */}
-        <div className="bg-white p-4 shadow rounded">
-          <h2 className="font-semibold mb-2">Route Stops (Ordered)</h2>
+        {/* SELECT ROUTE */}
+        <div className="bg-white p-5 rounded-xl shadow-md">
+          <label className="block text-sm font-medium text-gray-600 mb-2">
+            Select Route
+          </label>
+          <select
+            value={selectedRoute}
+            onChange={(e) => setSelectedRoute(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="">Select Route</option>
+            {routes.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name} ({r.id})
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <div className="max-h-96 overflow-y-auto space-y-2">
-            {routeStops.map((id, index) => (
-              <div
-                key={id}
-                className="flex justify-between items-center border p-2 rounded"
-              >
-                <span>
-                  {index + 1}. {getStopName(id)}
-                </span>
+        {/* MAIN GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <div className="space-x-2">
+          {/* LEFT: ALL STOPS */}
+          <div className="bg-white p-5 rounded-xl shadow-md">
+            <h2 className="text-md font-semibold text-gray-800 mb-3">
+              All Stops
+            </h2>
+
+            <input
+              placeholder="Search stops..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+
+            <div className="max-h-96 overflow-y-auto space-y-2 pr-1">
+              {filteredStops.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex justify-between items-center px-3 py-2 border rounded-lg hover:bg-gray-50 transition"
+                >
+                  <span className="text-sm text-gray-700">
+                    {s.name}
+                  </span>
+
                   <button
-                    onClick={() => moveUp(index)}
-                    className="bg-gray-300 px-2"
+                    onClick={() => addStop(s.id)}
+                    className="px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition active:scale-95"
                   >
-                    ↑
-                  </button>
-
-                  <button
-                    onClick={() => moveDown(index)}
-                    className="bg-gray-300 px-2"
-                  >
-                    ↓
-                  </button>
-
-                  <button
-                    onClick={() => removeStop(id)}
-                    className="bg-red-500 text-white px-2"
-                  >
-                    ✕
+                    + Add
                   </button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          <button
-            onClick={saveRouteStops}
-            className="mt-4 bg-green-600 text-white px-4 py-2 w-full"
-          >
-            Save Route Stops
-          </button>
-        </div>
-      </div>
+          {/* RIGHT: SELECTED STOPS */}
+          <div className="bg-white p-5 rounded-xl shadow-md">
+            <h2 className="text-md font-semibold text-gray-800 mb-3">
+              Route Stops (Ordered)
+            </h2>
 
-      {message && <p className="text-purple-600">{message}</p>}
-    </div>
+            <div className="max-h-96 overflow-y-auto space-y-2 pr-1">
+              {routeStops.map((id, index) => (
+                <div
+                  key={id}
+                  className="flex justify-between items-center px-3 py-2 border rounded-lg hover:bg-gray-50 transition"
+                >
+                  <span className="text-sm text-gray-800 font-medium">
+                    {index + 1}. {getStopName(id)}
+                  </span>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => moveUp(index)}
+                      className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 transition"
+                    >
+                      ↑
+                    </button>
+
+                    <button
+                      onClick={() => moveDown(index)}
+                      className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 transition"
+                    >
+                      ↓
+                    </button>
+
+                    <button
+                      onClick={() => removeStop(id)}
+                      className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {routeStops.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-4">
+                  No stops added yet
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={saveRouteStops}
+              className="mt-5 w-full py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition active:scale-95"
+            >
+              Save Route Stops
+            </button>
+          </div>
+        </div>
+
+        {/* MESSAGE */}
+        {message && (
+          <p className="text-sm text-green-600 font-medium">
+            {message}
+          </p>
+        )}
+      </div>
     </AdminLayout>
   );
 }

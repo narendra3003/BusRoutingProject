@@ -139,79 +139,112 @@ function OverridePage() {
       <h1 className="text-2xl font-bold">Override Management</h1>
 
       {/* SELECT TRIP */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">Select Trip</h2>
+      <div className="bg-white p-6 rounded-xl shadow-md">
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">
+        Select Trip
+      </h2>
 
-        <div className="flex gap-4">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="border p-2"
-          />
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
 
-          <button
-            onClick={fetchTrips}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Load Trips
-          </button>
-        </div>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="input"
+        />
 
-        <table className="w-full mt-4 border text-center">
-          <thead className="bg-gray-100">
-            <tr>
-              <th>Route</th>
-              <th>Time</th>
-              <th>Driver</th>
-              <th>Bus</th>
-              <th>Status</th>
-              <th>Select</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {trips.map((t) => (
-              <tr key={t.id} className="border-t">
-                <td>{t.route_name}</td>
-                <td>{t.start_time}</td>
-                <td>{t.driver_name}</td>
-                <td>{t.bus_code}</td>
-                <td>{t.status}</td>
-                <td>
-                  <button
-                    onClick={() => {
-                      setSelectedTrip(t);
-                      setOverrideData({
-                        new_driver_id: "",
-                        new_bus_id: "",
-                        new_start_time: t.start_time,
-                        reason: "",
-                      });
-                    }}
-                    className="bg-purple-600 text-white px-3 py-1 rounded"
-                  >
-                    Select
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <button
+          onClick={fetchTrips}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+        >
+          Load Trips
+        </button>
       </div>
+
+      <table className="w-full text-sm text-gray-700">
+        <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+          <tr>
+            <th className="px-4 py-3 text-left">Route</th>
+            <th className="px-4 py-3">Time</th>
+            <th className="px-4 py-3">Driver</th>
+            <th className="px-4 py-3">Bus</th>
+            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3 text-center">Action</th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y">
+          {trips.map((t) => (
+            <tr key={t.id} className="hover:bg-gray-50 transition">
+
+              <td className="px-4 py-3 font-semibold text-gray-800">
+                {t.route_name}
+              </td>
+
+              <td className="px-4 py-3">{t.start_time}</td>
+              <td className="px-4 py-3">{t.driver_name}</td>
+              <td className="px-4 py-3">{t.bus_code}</td>
+
+              {/* STATUS BADGE */}
+              <td className="px-4 py-3">
+                <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
+                  {t.status}
+                </span>
+              </td>
+
+              <td className="px-4 py-3 flex justify-center">
+                <button
+                  onClick={() => {
+                    setSelectedTrip(t);
+                    setOverrideData({
+                      new_driver_id: "",
+                      new_bus_id: "",
+                      new_start_time: t.start_time,
+                      reason: "",
+                    });
+                  }}
+                  className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                >
+                  Select
+                </button>
+              </td>
+            </tr>
+          ))}
+
+          {trips.length === 0 && (
+            <tr>
+              <td colSpan="6" className="text-center py-6 text-gray-400">
+                No trips found
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
 
       {/* APPLY OVERRIDE */}
       {selectedTrip && (
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-4">Apply Override</h2>
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
 
-          <p className="mb-2">
-            <strong>Route:</strong> {selectedTrip.route_name} |{" "}
-            <strong>Time:</strong> {selectedTrip.start_time}
+        {/* BACKDROP */}
+        <div
+          className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          onClick={() => setSelectedTrip(null)}
+        ></div>
+
+        {/* MODAL */}
+        <div className="relative bg-white w-full max-w-xl rounded-xl shadow-lg p-6">
+
+          <h2 className="text-lg font-semibold mb-2">
+            Apply Override
+          </h2>
+
+          <p className="text-sm text-gray-500 mb-4">
+            {selectedTrip.route_name} • {selectedTrip.start_time}
           </p>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Driver */}
+
             <select
               value={overrideData.new_driver_id}
               onChange={(e) =>
@@ -220,7 +253,7 @@ function OverridePage() {
                   new_driver_id: e.target.value,
                 })
               }
-              className="border p-2"
+              className="input"
             >
               <option value="">Select Driver</option>
               {drivers.map((d) => (
@@ -230,7 +263,6 @@ function OverridePage() {
               ))}
             </select>
 
-            {/* Bus */}
             <select
               value={overrideData.new_bus_id}
               onChange={(e) =>
@@ -239,7 +271,7 @@ function OverridePage() {
                   new_bus_id: e.target.value,
                 })
               }
-              className="border p-2"
+              className="input"
             >
               <option value="">Select Bus</option>
               {buses.map((b) => (
@@ -249,7 +281,6 @@ function OverridePage() {
               ))}
             </select>
 
-            {/* Time Override */}
             <input
               type="time"
               value={overrideData.new_start_time}
@@ -259,10 +290,9 @@ function OverridePage() {
                   new_start_time: e.target.value,
                 })
               }
-              className="border p-2"
+              className="input"
             />
 
-            {/* Reason */}
             <input
               placeholder="Reason"
               value={overrideData.reason}
@@ -272,55 +302,73 @@ function OverridePage() {
                   reason: e.target.value,
                 })
               }
-              className="border p-2 col-span-2"
+              className="input col-span-2"
             />
           </div>
 
-          <button
-            onClick={applyOverride}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded"
-          >
-            Apply Override
-          </button>
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              onClick={() => setSelectedTrip(null)}
+              className="px-4 py-2 border rounded-lg"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={() => {
+                applyOverride();
+                setSelectedTrip(null);
+              }}
+              className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            >
+              Apply Override
+            </button>
+          </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* HISTORY */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">Override History</h2>
+      <div className="bg-white p-6 rounded-xl shadow-md">
 
-        <table className="w-full border text-center">
-          <thead className="bg-gray-100">
-            <tr>
-              <th>Trip</th>
-              <th>Old Driver</th>
-              <th>New Driver</th>
-              <th>Old Bus</th>
-              <th>New Bus</th>
-              <th>Old Time</th>
-              <th>New Time</th>
-              <th>Reason</th>
-              <th>Time</th>
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">
+        Override History
+      </h2>
+
+      <table className="w-full text-sm text-gray-700">
+        <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+          <tr>
+            <th className="px-4 py-3">Trip</th>
+            <th className="px-4 py-3">Old Driver</th>
+            <th className="px-4 py-3">New Driver</th>
+            <th className="px-4 py-3">Old Bus</th>
+            <th className="px-4 py-3">New Bus</th>
+            <th className="px-4 py-3">Old Time</th>
+            <th className="px-4 py-3">New Time</th>
+            <th className="px-4 py-3">Reason</th>
+            <th className="px-4 py-3">Timestamp</th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y">
+          {history.map((h) => (
+            <tr key={h.id} className="hover:bg-gray-50 transition">
+              <td className="px-4 py-3">{h.trip_id}</td>
+              <td className="px-4 py-3">{h.old_driver_id}</td>
+              <td className="px-4 py-3">{h.new_driver_id}</td>
+              <td className="px-4 py-3">{h.old_bus_id}</td>
+              <td className="px-4 py-3">{h.new_bus_id}</td>
+              <td className="px-4 py-3">{h.old_start_time || "-"}</td>
+              <td className="px-4 py-3">{h.new_start_time || "-"}</td>
+              <td className="px-4 py-3">{h.reason || "-"}</td>
+              <td className="px-4 py-3 text-xs text-gray-500">
+                {new Date(h.created_at).toLocaleString()}
+              </td>
             </tr>
-          </thead>
-
-          <tbody>
-            {history.map((h) => (
-              <tr key={h.id} className="border-t">
-                <td>{h.trip_id}</td>
-                <td>{h.old_driver_id}</td>
-                <td>{h.new_driver_id}</td>
-                <td>{h.old_bus_id}</td>
-                <td>{h.new_bus_id}</td>
-                <td>{h.old_start_time || "-"}</td>
-                <td>{h.new_start_time || "-"}</td>
-                <td>{h.reason || "-"}</td>
-                <td>{new Date(h.created_at).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
+    </div>
 
       {message && <p className="text-purple-600">{message}</p>}
     </div>

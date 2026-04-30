@@ -167,180 +167,236 @@ function BusesDataFeed() {
       <h1 className="text-2xl font-bold">Buses Management</h1>
 
       {/* ADD BUS */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">Add Bus</h2>
+      <div className="bg-white p-6 rounded-xl shadow-md">
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">
+        Add Bus
+      </h2>
 
-        <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          <input
-            placeholder="Bus Code"
-            value={newBus.code}
-            onChange={(e) =>
-              setNewBus({ ...newBus, code: e.target.value })
-            }
-            className="border p-2"
-          />
+        <input
+          placeholder="Bus Code"
+          value={newBus.code}
+          onChange={(e) =>
+            setNewBus({ ...newBus, code: e.target.value })
+          }
+          className="input"
+        />
 
-          <select
-            value={newBus.status}
-            onChange={(e) =>
-              setNewBus({ ...newBus, status: e.target.value })
-            }
-            className="border p-2"
-          >
-            <option value="active">Active</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="inactive">Inactive</option>
-          </select>
-
-          <input
-            type="number"
-            placeholder="Sitting Capacity"
-            value={newBus.sitting_capacity}
-            onChange={(e) =>
-              setNewBus({
-                ...newBus,
-                sitting_capacity: e.target.value,
-              })
-            }
-            className="border p-2"
-          />
-
-          <input
-            type="number"
-            placeholder="Standing Capacity"
-            value={newBus.standing_capacity}
-            onChange={(e) =>
-              setNewBus({
-                ...newBus,
-                standing_capacity: e.target.value,
-              })
-            }
-            className="border p-2"
-          />
-        </div>
-
-        <button
-          onClick={addBus}
-          className="mt-4 bg-purple-600 text-white px-4 py-2"
+        <select
+          value={newBus.status}
+          onChange={(e) =>
+            setNewBus({ ...newBus, status: e.target.value })
+          }
+          className="input"
         >
-          Add Bus
-        </button>
+          <option value="active">Active</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="inactive">Inactive</option>
+        </select>
+
+        <input
+          type="number"
+          placeholder="Seating Capacity"
+          value={newBus.sitting_capacity}
+          onChange={(e) =>
+            setNewBus({
+              ...newBus,
+              sitting_capacity: e.target.value,
+            })
+          }
+          className="input"
+        />
+
+        <input
+          type="number"
+          placeholder="Standing Capacity"
+          value={newBus.standing_capacity}
+          onChange={(e) =>
+            setNewBus({
+              ...newBus,
+              standing_capacity: e.target.value,
+            })
+          }
+          className="input"
+        />
       </div>
 
+      <button
+        onClick={addBus}
+        className="mt-5 w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+      >
+        + Add Bus
+      </button>
+    </div>
+
       {/* TABLE */}
-      <div className="bg-white p-6 shadow rounded">
-        <h2 className="font-semibold mb-4">All Buses</h2>
+      <div className="bg-white p-6 rounded-xl shadow-md">
+
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          All Buses
+        </h2>
 
         <input
           placeholder="Search by code..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border p-2 mb-4 w-full"
+          className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:ring-2 focus:ring-purple-500 outline-none"
         />
 
-        <table className="w-full border text-center">
-          <thead className="bg-gray-100">
+        <table className="w-full text-sm text-gray-700">
+          <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
             <tr>
-              <th>Code</th>
-              <th>Sitting</th>
-              <th>Standing</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th className="px-4 py-3 text-left">Code</th>
+              <th className="px-4 py-3">Seating</th>
+              <th className="px-4 py-3">Standing</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
 
-          <tbody>
+          <tbody className="divide-y">
             {filteredBuses.map((b) => (
-              <tr key={b.id} className="border-t">
-                <td>{b.code}</td>
-                <td>{b.sitting_capacity}</td>
-                <td>{b.standing_capacity}</td>
-                <td>{b.status}</td>
+              <tr key={b.id} className="hover:bg-gray-50 transition">
 
-                <td className="space-x-2">
+                <td className="px-4 py-3 font-semibold text-gray-800">
+                  {b.code}
+                </td>
+
+                <td className="px-4 py-3">{b.sitting_capacity}</td>
+                <td className="px-4 py-3">{b.standing_capacity}</td>
+
+                {/* STATUS BADGE */}
+                <td className="px-4 py-3">
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      b.status === "active"
+                        ? "bg-green-100 text-green-700"
+                        : b.status === "maintenance"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {b.status}
+                  </span>
+                </td>
+
+                {/* ACTIONS */}
+                <td className="px-4 py-3 flex justify-center gap-2">
+
                   <button
                     onClick={() => setSelectedBus(b)}
-                    className="bg-yellow-500 text-white px-2 py-1"
+                    className="px-3 py-1 text-xs bg-yellow-400 text-white rounded hover:bg-yellow-500 transition"
                   >
                     Edit
                   </button>
 
                   <button
                     onClick={() => toggleStatus(b)}
-                    className="bg-blue-600 text-white px-2 py-1"
+                    className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                   >
                     Toggle
                   </button>
                 </td>
               </tr>
             ))}
+
+            {filteredBuses.length === 0 && (
+              <tr>
+                <td colSpan="5" className="text-center py-6 text-gray-400">
+                  No buses found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       {/* EDIT */}
       {selectedBus && (
-        <div className="bg-white p-6 shadow rounded">
-          <h2 className="font-semibold mb-4">Edit Bus</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* BACKDROP */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setSelectedBus(null)}
+          ></div>
 
-            <input
-              value={selectedBus.code}
-              onChange={(e) =>
-                setSelectedBus({ ...selectedBus, code: e.target.value })
-              }
-              className="border p-2"
-            />
+          {/* MODAL */}
+          <div className="relative bg-white w-full max-w-lg rounded-xl shadow-lg p-6">
 
-            <select
-              value={selectedBus.status}
-              onChange={(e) =>
-                setSelectedBus({ ...selectedBus, status: e.target.value })
-              }
-              className="border p-2"
-            >
-              <option value="active">Active</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="inactive">Inactive</option>
-            </select>
+            <h2 className="text-lg font-semibold mb-4">
+              Edit Bus
+            </h2>
 
-            <input
-              type="number"
-              value={selectedBus.sitting_capacity}
-              onChange={(e) =>
-                setSelectedBus({
-                  ...selectedBus,
-                  sitting_capacity: e.target.value,
-                })
-              }
-              className="border p-2"
-            />
+            <div className="grid grid-cols-2 gap-4">
 
-            <input
-              type="number"
-              value={selectedBus.standing_capacity}
-              onChange={(e) =>
-                setSelectedBus({
-                  ...selectedBus,
-                  standing_capacity: e.target.value,
-                })
-              }
-              className="border p-2"
-            />
+              <input
+                value={selectedBus.code}
+                onChange={(e) =>
+                  setSelectedBus({ ...selectedBus, code: e.target.value })
+                }
+                className="input"
+              />
+
+              <select
+                value={selectedBus.status}
+                onChange={(e) =>
+                  setSelectedBus({ ...selectedBus, status: e.target.value })
+                }
+                className="input"
+              >
+                <option value="active">Active</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="inactive">Inactive</option>
+              </select>
+
+              <input
+                type="number"
+                value={selectedBus.sitting_capacity}
+                onChange={(e) =>
+                  setSelectedBus({
+                    ...selectedBus,
+                    sitting_capacity: e.target.value,
+                  })
+                }
+                className="input"
+              />
+
+              <input
+                type="number"
+                value={selectedBus.standing_capacity}
+                onChange={(e) =>
+                  setSelectedBus({
+                    ...selectedBus,
+                    standing_capacity: e.target.value,
+                  })
+                }
+                className="input"
+              />
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setSelectedBus(null)}
+                className="px-4 py-2 border rounded-lg"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => {
+                  updateBus();
+                  setSelectedBus(null);
+                }}
+                className="px-5 py-2 bg-green-600 text-white rounded-lg"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
-
-          <button
-            onClick={updateBus}
-            className="mt-4 bg-green-600 text-white px-4 py-2"
-          >
-            Save Changes
-          </button>
         </div>
       )}
-
-      {message && <p className="text-purple-600">{message}</p>}
     </div>
     </AdminLayout>
   );
