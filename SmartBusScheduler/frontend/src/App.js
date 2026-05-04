@@ -1,13 +1,11 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import LoginForm from "./components/LoginForm";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
-<<<<<<< Updated upstream
-=======
 import Signup from "./components/SignUp";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Unauthorized from "./pages/Unauthorized";
@@ -25,32 +23,54 @@ import DriverLeavePage from "./pages/DriverLeavePage";
 import ConductorDashboard from "./pages/conductor";
 import AdminScheduleManagement from "./pages/schedule";
 import St from "./pages/static1";
->>>>>>> Stashed changes
 
 function App() {
+  const location = useLocation();
+
+  // ✅ Show Navbar only on dashboard routes
+  const showNavbar = ["/customer", "/admin", "/driver"].includes(location.pathname);
+
   return (
     <div className="min-h-screen bg-gray-100">
-    {/* <h1 className="text-3xl font-bold text-purple-600">Hello Tailwind!</h1> */}
-      <Navbar />
+      {/* ✅ Conditionally render Navbar */}
+      {showNavbar && <Navbar />}
+
       <div className="p-4">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginForm />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
-          <Route path="/customer" element={
-              <CustomerDashboard />
-          }/>
+          <Route
+            path="/customer"
+            element={
+                <CustomerDashboard />
+            }
+          />
+          {/* <Route
+            path="/conductor/dashboard"
+            element={
+                <ConductorDashboard />
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+                <AdminScheduleManagement />
+            }
+          />
+          */}
 
-          <Route path="/admin" element={
-            
-              <AdminDashboard />
-          }/>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-<<<<<<< Updated upstream
-          <Route path="/driver" element={
-              <DriverDashboard />
-          }/>
-=======
           <Route
             path="/driver"
             element={
@@ -139,7 +159,6 @@ function App() {
                     </ProtectedRoute>
                   }
               />
->>>>>>> Stashed changes
         </Routes>
       </div>
     </div>
