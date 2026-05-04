@@ -234,17 +234,56 @@ INSERT INTO bus_data (passenger_cap_count) VALUES
 (60);
 
 
+<<<<<<< Updated upstream
 CREATE TABLE crew_data (
     crew_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     post VARCHAR(20) CHECK (post IN ('Driver', 'Conductor')),
     experience INT CHECK (experience >= 0)
+=======
+
+-- =========================
+-- OVERRIDES (DISPATCH CHANGES)
+-- =========================
+
+CREATE TABLE overrides (
+
+    id SERIAL PRIMARY KEY,
+
+    trip_id INTEGER NOT NULL,
+
+    old_driver_id INTEGER,
+    new_driver_id INTEGER,
+
+    old_bus_id INTEGER,
+    new_bus_id INTEGER,
+
+    old_time TIME,
+    new_time TIME,
+    
+    reason TEXT,
+
+    created_by INTEGER NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_override_trip
+        FOREIGN KEY(trip_id)
+        REFERENCES schedule_trips(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_override_user
+        FOREIGN KEY(created_by)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+>>>>>>> Stashed changes
 );
 
 INSERT INTO crew_data (name, post, experience) VALUES
 ('Ramesh Kumar', 'Driver', 12);
 
 
+<<<<<<< Updated upstream
 -- select * from users;
 -- select * from stops;
 -- select * from routes;
@@ -255,3 +294,135 @@ INSERT INTO crew_data (name, post, experience) VALUES
 -- select * from crew_data;
 -- select * from bus_data;
 -- select * from services;
+=======
+
+-- =========================
+-- NOTIFICATIONS
+-- =========================
+
+CREATE TABLE notifications (
+
+    id SERIAL PRIMARY KEY,
+
+    user_id INTEGER NOT NULL,
+
+    title TEXT NOT NULL,
+
+    message TEXT NOT NULL,
+
+    type notification_type DEFAULT 'system',
+
+    is_read BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_notification_user
+        FOREIGN KEY(user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_notification_user ON notifications(user_id);
+CREATE INDEX idx_notification_read ON notifications(is_read);
+
+
+
+-- =========================
+-- TRIP LIVE STATUS (OPTIONAL CACHE)
+-- =========================
+
+CREATE TABLE trip_live_status (
+
+    trip_id INTEGER PRIMARY KEY,
+
+    current_stop_id INTEGER,
+
+    delay_minutes INTEGER DEFAULT 0,
+
+    last_lat DOUBLE PRECISION,
+    last_lon DOUBLE PRECISION,
+
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_live_trip
+        FOREIGN KEY(trip_id)
+        REFERENCES schedule_trips(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_live_stop
+        FOREIGN KEY(current_stop_id)
+        REFERENCES stops(id)
+        ON DELETE SET NULL
+);
+
+CREATE TABLE templates (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    template_type TEXT DEFAULT 'auto',
+
+    bus_count INTEGER NOT NULL,
+    driver_count INTEGER NOT NULL,
+
+    created_by INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_template_user
+        FOREIGN KEY (created_by)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+);
+
+CREATE TABLE template_records (
+    id SERIAL PRIMARY KEY,
+    template_id INTEGER NOT NULL,
+    route_id TEXT NOT NULL,
+    start_time TIME NOT NULL,
+    busNo INTEGER NOT NULL,
+    driverNo INTEGER NOT NULL,
+
+    CONSTRAINT fk_template_record_template
+        FOREIGN KEY (template_id)
+        REFERENCES templates(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_template_record_route
+        FOREIGN KEY (route_id)
+        REFERENCES routes(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_template_records_template
+ON template_records(template_id);
+
+CREATE TABLE ob_data (
+    id SERIAL PRIMARY KEY,
+
+    route_id TEXT NOT NULL,
+    stop_id INTEGER NOT NULL,
+
+    boarding_count INTEGER DEFAULT 0,
+    offboarding_count INTEGER DEFAULT 0,
+
+    trip_datetime TIMESTAMP NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_ob_route
+        FOREIGN KEY(route_id)
+        REFERENCES routes(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_ob_stop
+        FOREIGN KEY(stop_id)
+        REFERENCES stops(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ob_route_time ON ob_data(route_id, trip_datetime);
+CREATE INDEX idx_ob_stop ON ob_data(stop_id);
+
+
+COMMIT;
+
+>>>>>>> Stashed changes

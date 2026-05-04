@@ -158,3 +158,61 @@ class DriverTripsResponse(BaseModel):
 class RouteMapResponse(BaseModel):
     route_id: int
     stops: List[StopBase]
+<<<<<<< Updated upstream
+=======
+
+
+class TripLiveStatusResponse(BaseModel):
+    trip_id: int
+    current_stop_id: Optional[int]
+    delay_minutes: int
+    last_lat: Optional[float]
+    last_lon: Optional[float]
+    last_updated: datetime
+
+class DispatchResponse(BaseModel):
+    id: int
+    start_time: str
+    route_name: str
+    driver_name: str
+    bus_code: str
+    delay_minutes: int
+    status: str
+
+    class Config:
+        from_attributes = True  # For SQLAlchemy compatibility
+
+
+class ScheduleGenerationRequest(BaseModel):
+    template_id: int
+    start_date: date
+    end_date: date
+
+
+class ScheduleLogResponse(BaseModel):
+    trip_date: date
+    start_time: time
+    route_id: str
+    route_name: str
+    driver_name: str
+    bus_code: str
+    status: str
+
+
+class ScheduleSummaryResponse(BaseModel):
+    total_trips: int
+    start_date: date
+    end_date: date
+    routes_processed: int
+
+
+class ScheduleGenerationResponse(BaseModel):
+    message: str
+    summary: ScheduleSummaryResponse
+    logs: List[ScheduleLogResponse]
+
+class TemplateConfig(BaseModel):
+    name: str
+    bus_count: int
+    driver_count: int
+>>>>>>> Stashed changes

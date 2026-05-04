@@ -4,6 +4,14 @@ from jose import jwt, JWTError
 import os
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
+import csv
+from io import StringIO
+
+
+def parse_observation_csv(file_bytes: bytes):
+    content = file_bytes.decode("utf-8")
+    reader = csv.DictReader(StringIO(content))
+    return [row for row in reader]
 
 # Secret key for JWT (use env variable in production)
 SECRET_KEY = os.getenv("JWT_SECRET", "your_secret_key_here")

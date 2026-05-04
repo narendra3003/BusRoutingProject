@@ -1,4 +1,5 @@
 # Node modules
+node_modules/
 SmartBusScheduler/frontend/node_modules/
 SmartBusScheduler/backend/__pycache__/
 SmartBusScheduler/backend/app/__pycache__/
