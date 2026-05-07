@@ -17,7 +17,8 @@ from .routers import (public_routes,
                         admin_stops,
                         analytics,
                        admin_leaves,
-                       admin_dispatch
+                       admin_dispatch,
+                       admin_schedule2
 )
 from .database import Base, engine
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,11 +63,11 @@ app.include_router(admin_drivers.router, prefix="/admin/drivers", tags=["Admin D
 app.include_router(admin_buses.router, prefix="/admin/buses", tags=["Admin Buses"])
 app.include_router(admin_routes.router, prefix="/admin/routes", tags=["Admin Routes"])
 app.include_router(admin_stops.router, prefix="/admin/stops", tags=["Admin Stops"])
-app.include_router(admin_schedule.router, prefix="/admin/schedule", tags=["Admin Schedule"])
+app.include_router(admin_schedule2.router, prefix="/admin/schedule", tags=["Admin Schedule"])
 app.include_router(admin_leaves.router, prefix="/admin/leaves", tags=["Admin Leaves"])
 app.include_router(admin_dispatch.router, prefix="/admin/dispatch", tags=["Admin Dispatch"])
 app.include_router(admin_override.router, prefix="/admin/dispatch/overrides", tags=["Admin Override"])
-
+    
 app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 
 @app.get("/", tags=["Health"])

@@ -564,11 +564,17 @@ def generate_schedule(payload: dict, db: Session = Depends(get_db)):
     total = 0
     current = start_date
 
+    seen = set()
+
     while current <= end_date:
 
         for rec in template.records:
 
-            # 🚫 CHECK DUPLICATE BEFORE INSERT
+            key = (rec.route_id, current, rec.start_time, rec.busno)
+
+            if key in seen:
+                continue
+
             exists = db.query(ScheduleTrip).filter(
                 ScheduleTrip.route_id == rec.route_id,
                 ScheduleTrip.trip_date == current,
@@ -578,6 +584,8 @@ def generate_schedule(payload: dict, db: Session = Depends(get_db)):
 
             if exists:
                 continue
+
+            seen.add(key)
 
             trip = ScheduleTrip(
                 route_id=rec.route_id,
@@ -589,20 +597,6 @@ def generate_schedule(payload: dict, db: Session = Depends(get_db)):
             )
 
             db.add(trip)
-
-            route = db.query(Route).filter(Route.id == rec.route_id).first()
-            bus = db.query(Bus).filter(Bus.id == rec.busno).first()
-            driver = db.query(Driver).filter(Driver.user_id == rec.driverno).first()
-
-            logs.append({
-                "trip_date": str(current),
-                "start_time": str(rec.start_time),
-                "route_name": route.name if route else rec.route_id,
-                "driver_name": driver.user.name if driver else str(rec.driverno),
-                "bus_code": bus.code if bus else str(rec.busno),
-                "status": "scheduled"
-            })
-
             total += 1
 
         current += timedelta(days=1)
