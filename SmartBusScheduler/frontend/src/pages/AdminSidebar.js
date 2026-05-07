@@ -1,6 +1,6 @@
 // Sidebar.jsx
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Map,
@@ -13,12 +13,16 @@ import {
   AlertCircle,
   AlertTriangle,
   Menu,
+  LogOut,
 } from "lucide-react";
 
-export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+export default function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
-
+  const navigate = useNavigate();
+  const logout = () => {
+    sessionStorage.clear();
+    navigate("/"); // or "/login" if that’s your login page
+  };
   const menuItems = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
     { name: "Stops", path: "/stops-data-feed", icon: Map },
@@ -34,14 +38,14 @@ export default function Sidebar() {
 
   return (
     <div
-      className={`h-screen bg-white shadow-md flex flex-col transition-all duration-300
+      className={`fixed top-0 left-0 h-screen bg-white shadow-md flex flex-col transition-all duration-300
         ${collapsed ? "w-20" : "w-64"}`}
     >
       {/* TOP */}
       <div className="flex items-center justify-between p-4">
         {!collapsed && (
           <h1 className="text-lg font-bold text-purple-600">
-            ABSRMS
+            SmartBus
           </h1>
         )}
 
@@ -81,6 +85,19 @@ export default function Sidebar() {
           );
         })}
       </nav>
-    </div>
+      <div className="px-2 pb-4 mt-auto">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+          >
+            <LogOut size={20} />
+            {!collapsed && (
+              <span className="text-sm font-medium">
+                Logout
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
   );
 }

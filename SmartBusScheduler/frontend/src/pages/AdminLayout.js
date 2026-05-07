@@ -1,12 +1,17 @@
-// AdminLayout.jsx
+import { useState } from "react";
 import Sidebar from "./AdminSidebar";
 
 export default function AdminLayout({ children }) {
-  return (
-    <div className="flex">
-      <Sidebar />
+  const [collapsed, setCollapsed] = useState(false);
 
-      <div className="flex-1 bg-gray-100 min-h-screen p-6">
+  return (
+    <div>
+      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+
+      <div
+        className={`bg-gray-100 min-h-screen p-6 transition-all duration-300
+          ${collapsed ? "ml-20" : "ml-64"}`}
+      >
         {children}
       </div>
     </div>

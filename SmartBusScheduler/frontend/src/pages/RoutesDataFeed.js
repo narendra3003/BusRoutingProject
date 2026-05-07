@@ -283,7 +283,6 @@ function RoutesDataFeed() {
                 <th className="px-6 py-3 text-left">Route Name</th>
                 <th className="px-6 py-3 text-left">Start</th>
                 <th className="px-6 py-3 text-left">End</th>
-                <th className="px-6 py-3">Distance</th>
                 <th className="px-6 py-3 text-center">Actions</th>
               </tr>
             </thead>
@@ -309,13 +308,6 @@ function RoutesDataFeed() {
 
                   <td className="px-6 py-4">
                     {r.end_stop_name || r.end_stop_id}
-                  </td>
-
-                  {/* DISTANCE BADGE */}
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
-                      {r.distance_km ? `${r.distance_km} km` : "-"}
-                    </span>
                   </td>
 
                   {/* ACTIONS */}

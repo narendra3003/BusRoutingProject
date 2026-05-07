@@ -345,6 +345,91 @@ CREATE TABLE trip_live_status (
         ON DELETE SET NULL
 );
 
+CREATE TABLE templates (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    template_type TEXT DEFAULT 'auto',
+
+    bus_count INTEGER NOT NULL,
+    driver_count INTEGER NOT NULL,
+
+    created_by INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_template_user
+        FOREIGN KEY (created_by)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+);
+
+CREATE TABLE template_records (
+    id SERIAL PRIMARY KEY,
+    template_id INTEGER NOT NULL,
+    route_id TEXT NOT NULL,
+    start_time TIME NOT NULL,
+    -- busno INTEGER NOT NULL,
+    -- driverno INTEGER NOT NULL,
+
+    CONSTRAINT fk_template_record_template
+        FOREIGN KEY (template_id)
+        REFERENCES templates(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_template_record_route
+        FOREIGN KEY (route_id)
+        REFERENCES routes(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_template_records_template
+ON template_records(template_id);
+
+CREATE TABLE ob_data (
+    id SERIAL PRIMARY KEY,
+
+    route_id TEXT NOT NULL,
+    
+    origin_stop_id INTEGER NOT NULL,
+    destination_stop_id INTEGER NOT NULL,
+
+    trip_datetime TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+
+    boarding_count INTEGER NOT NULL DEFAULT 0 CHECK (boarding_count >= 0),
+
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+
+    -- Foreign keys
+    CONSTRAINT fk_route
+        FOREIGN KEY (route_id)
+        REFERENCES routes(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_origin_stop
+        FOREIGN KEY (origin_stop_id)
+        REFERENCES stops(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_destination_stop
+        FOREIGN KEY (destination_stop_id)
+        REFERENCES stops(id)
+        ON DELETE CASCADE
+);
+-- Query by route + time (most common for scheduling)
+CREATE INDEX idx_ob_route_time
+ON ob_data (route_id, trip_datetime);
+
+-- Query OD pairs
+CREATE INDEX idx_ob_od_pair
+ON ob_data (origin_stop_id, destination_stop_id);
+
+-- Query by time alone (for time-bucket aggregation)
+CREATE INDEX idx_ob_time
+ON ob_data (trip_datetime);
+
+-- Optional: if you frequently filter by origin
+CREATE INDEX idx_ob_origin
+ON ob_data (origin_stop_id);
 
 COMMIT;
 

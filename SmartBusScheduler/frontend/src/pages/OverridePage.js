@@ -343,8 +343,6 @@ function OverridePage() {
             <th className="px-4 py-3">New Driver</th>
             <th className="px-4 py-3">Old Bus</th>
             <th className="px-4 py-3">New Bus</th>
-            <th className="px-4 py-3">Old Time</th>
-            <th className="px-4 py-3">New Time</th>
             <th className="px-4 py-3">Reason</th>
             <th className="px-4 py-3">Timestamp</th>
           </tr>
@@ -358,8 +356,6 @@ function OverridePage() {
               <td className="px-4 py-3">{h.new_driver_id}</td>
               <td className="px-4 py-3">{h.old_bus_id}</td>
               <td className="px-4 py-3">{h.new_bus_id}</td>
-              <td className="px-4 py-3">{h.old_start_time || "-"}</td>
-              <td className="px-4 py-3">{h.new_start_time || "-"}</td>
               <td className="px-4 py-3">{h.reason || "-"}</td>
               <td className="px-4 py-3 text-xs text-gray-500">
                 {new Date(h.created_at).toLocaleString()}

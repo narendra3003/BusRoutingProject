@@ -261,7 +261,7 @@ def get_schedule(
         response_trips.append(
             DriverTripResponse(
                 id=trip.id,
-                busNo=bus.code,
+                busno=bus.code,
                 time=time,
                 busName=f"{route.name}",
                 status=trip.status.value,

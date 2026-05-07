@@ -32,7 +32,7 @@ const CSS = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Nunito', sans-serif; background: #f4f6f9; }
 
-.hero { background: #1db954; padding: 72px 24px 80px; text-align: center; }
+.hero { background: #4338CA; padding: 72px 24px 80px; text-align: center; }
 .hero-title { font-size: clamp(36px,5vw,58px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: -1px; margin-bottom: 16px; }
 .hero-title .highlight { color: #0a4d25; }
 .hero-sub { font-size: 16px; color: rgba(255,255,255,0.85); margin-bottom: 48px; }

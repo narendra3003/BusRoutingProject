@@ -252,7 +252,7 @@ function DriverDashboard() {
                   {trip.busName}
                 </h3>
                 <span className="bg-blue-100 px-3 py-1 rounded-full">
-                  {trip.busNo}
+                  {trip.busno}
                 </span>
               </div>
 

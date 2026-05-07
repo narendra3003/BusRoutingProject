@@ -44,15 +44,56 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex flex-col items-center mt-20">
-      <h2 className="text-2xl font-bold mb-4">Login</h2>
-      <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} className="border p-2 m-2"/>
-      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="border p-2 m-2"/>
-      <button onClick={handleLogin} className="bg-purple-500 text-white px-4 py-2 rounded">Login</button>
-      <p>Don't have an account? <Link to="/signup" className="text-blue-500">Sign up</Link></p>
-      {error && <div className="text-red-500 mt-2">{error}</div>}
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 to-indigo-100">
+
+    {/* CARD */}
+    <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-lg">
+
+      {/* HEADER */}
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">
+          Welcome Back
+        </h2>
+        <p className="text-sm text-gray-500">
+          Login to your account
+        </p>
+      </div>
+
+      {/* FORM */}
+      <div className="space-y-4">
+
+        <input
+          placeholder="Username"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+
+        <button
+          onClick={handleLogin}
+          className="w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+        >
+          Login
+        </button>
+      </div>
+
+      {/* ERROR */}
+      {error && (
+        <div className="mt-4 text-sm text-red-600 text-center">
+          {error}
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 }
 
 export default LoginForm;

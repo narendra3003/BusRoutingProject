@@ -4,6 +4,7 @@ from jose import jwt, JWTError
 import os
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
+from datetime import datetime, timedelta
 
 # Secret key for JWT (use env variable in production)
 SECRET_KEY = os.getenv("JWT_SECRET", "SecretKey")
@@ -21,14 +22,6 @@ def hash_password(password: str) -> str:
 # Verify password
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
-
-# Create JWT token
-# def create_access_token(data: dict, expires_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES):
-#     to_encode = data.copy()
-#     expire = datetime.utcnow() + timedelta(minutes=expires_minutes)
-#     to_encode.update({"exp": expire})
-#     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-from datetime import datetime, timedelta
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -50,22 +43,6 @@ def decode_access_token(token: str):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-# Dependency to get current user
-# def get_current_user(token: str = Depends(oauth2_scheme)):
-#     payload = decode_access_token(token)
-#     # Support both user_id and sub for robustness
-#     user_id = payload.get("user_id") or payload.get("sub")
-#     role: str = payload.get("role")
-
-#     if user_id is None or role is None:
-#         raise HTTPException(status_code=401, detail="Invalid token data")
-
-#     # ensure int
-#     try:
-#         user_id = int(user_id)
-#     except Exception:
-#         pass
-#     return {"user_id": user_id, "role": role}
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)
 ):
