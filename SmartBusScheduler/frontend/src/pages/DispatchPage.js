@@ -98,7 +98,7 @@ function DispatchPage() {
       <h1 className="text-2xl font-bold">Dispatch Panel</h1>
 
       {/* FILTERS */}
-      <div className="bg-white p-4 shadow rounded flex flex-wrap gap-4">
+      <div className="bg-[#E6F1FB] p-4 shadow rounded flex flex-wrap gap-4">
 
         <input
           type="date"
@@ -140,7 +140,7 @@ function DispatchPage() {
 
         <button
           onClick={fetchDispatch}
-          className="bg-blue-600 text-white px-4"
+          className="bg-[#0C447C] text-white px-4"
         >
           Load
         </button>
@@ -148,7 +148,7 @@ function DispatchPage() {
       </div>
 
       {/* TABLE */}
-      <div className="bg-white p-6 shadow rounded">
+      <div className="bg-[#E6F1FB] p-6 shadow rounded">
 
         {loading && <p>Loading...</p>}
 

@@ -185,6 +185,19 @@ class RouteStopResponse(BaseModel):
     time_from_start: Optional[int]
     dist_from_start: Optional[float]
 
+class RouteStopsBulkCreate(BaseModel):
+    route_id: str
+    stops: List[int]
+
+
+class RouteStopResponse(BaseModel):
+    stop_id: int
+    seq: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
 
 # =========================
 # TRIP

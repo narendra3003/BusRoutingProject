@@ -163,7 +163,7 @@ function RoutesDataFeed() {
 
       <h1 className="text-2xl font-bold">Routes Management</h1>
 
-      <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="bg-[#E6F1FB] p-6 rounded-xl shadow-md">
   
   {/* HEADER */}
   <div className="mb-5">
@@ -189,7 +189,7 @@ function RoutesDataFeed() {
         onChange={(e) =>
           setNewRoute({ ...newRoute, id: e.target.value })
         }
-        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0C447C]"
       />
     </div>
 
@@ -204,7 +204,7 @@ function RoutesDataFeed() {
         onChange={(e) =>
           setNewRoute({ ...newRoute, name: e.target.value })
         }
-        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0C447C]"
       />
     </div>
 
@@ -218,7 +218,7 @@ function RoutesDataFeed() {
         onChange={(e) =>
           setNewRoute({ ...newRoute, start_stop_id: e.target.value })
         }
-        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0C447C]"
       >
         <option value="">Select Start Stop</option>
         {stops.map((s) => (
@@ -239,7 +239,7 @@ function RoutesDataFeed() {
         onChange={(e) =>
           setNewRoute({ ...newRoute, end_stop_id: e.target.value })
         }
-        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0C447C]"
       >
         <option value="">Select End Stop</option>
         {stops.map((s) => (
@@ -255,7 +255,7 @@ function RoutesDataFeed() {
   <div className="mt-6 flex justify-end">
     <button
       onClick={addRoute}
-      className="px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-purple-700 transition active:scale-95"
+      className="px-5 py-2 bg-[#0C447C] text-white text-sm font-medium rounded-lg shadow-sm hover:bg-[#0A3A6A] transition active:scale-95"
     >
       + Create Route
     </button>
@@ -263,7 +263,7 @@ function RoutesDataFeed() {
 </div>
 
       {/* ROUTES TABLE */}
-      <div className="bg-white p-6 shadow rounded">
+      <div className="bg-[#E6F1FB] a p-6 shadow rounded">
         <h2 className="font-semibold mb-4">All Routes</h2>
 
         <input

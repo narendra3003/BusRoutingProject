@@ -171,7 +171,7 @@ function DriverDashboard() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Driver Dashboard</h1>
 
-          <button
+          <button style={{ marginLeft: '1000px' }}
             onClick={() => window.location.href = "/driver/leave"}
             className="bg-red-500 text-white px-4 py-2 rounded-lg shadow"
           >

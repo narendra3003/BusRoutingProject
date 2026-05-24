@@ -204,7 +204,7 @@ def assign_resources(db: Session, trips, trip_date):
             conflict = db.query(ScheduleTrip).filter(
                 ScheduleTrip.driver_id == driver.user_id,
                 ScheduleTrip.trip_date == trip_date,
-                ScheduleTrip.start_time == trip.start_time,
+                ScheduleTrip.start_time == trip.start_time.time(),
             ).first()
 
             if not leave and not conflict:
@@ -451,7 +451,7 @@ def assign_resources(db, trips, schedule_date):
             conflict = db.query(ScheduleTrip).filter(
                 ScheduleTrip.driver_id == d.user_id,
                 ScheduleTrip.trip_date == schedule_date,
-                ScheduleTrip.start_time == trip["start_time"],
+                ScheduleTrip.start_time == trip["start_time"].time(),
             ).first()
 
             if not conflict:
@@ -468,7 +468,7 @@ def assign_resources(db, trips, schedule_date):
             conflict = db.query(ScheduleTrip).filter(
                 ScheduleTrip.bus_id == b.id,
                 ScheduleTrip.trip_date == schedule_date,
-                ScheduleTrip.start_time == trip["start_time"],
+                ScheduleTrip.start_time == trip["start_time"].time(),
             ).first()
 
             if not conflict:

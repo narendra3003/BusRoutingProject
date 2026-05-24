@@ -81,7 +81,7 @@ function ScheduleGeneration() {
   ========================== */
 
   const Card = ({ title, icon: Icon, children }) => (
-    <div className="bg-white shadow-md rounded-xl p-6 border border-gray-200">
+    <div className="bg-[#E6F1FB] shadow-md rounded-xl p-6 border border-gray-200">
       <div className="flex items-center gap-2 mb-4">
         {Icon && <Icon className="w-5 h-5 text-blue-600" />}
         <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
@@ -99,7 +99,7 @@ function ScheduleGeneration() {
   }) => {
     const styles = {
       primary: "bg-blue-600 hover:bg-blue-700 text-white",
-      secondary: "bg-purple-600 hover:bg-purple-700 text-white",
+      secondary: "bg-[#0C447C] hover:bg-[#0A3A6A] text-white",
       success: "bg-green-600 hover:bg-green-700 text-white",
       dark: "bg-gray-800 hover:bg-gray-900 text-white",
     };
@@ -309,7 +309,7 @@ function ScheduleGeneration() {
           </h2>
 
 {/* STEP 1: UPLOAD */}
-<div className="bg-white p-6 rounded shadow">
+<div className="bg-[#E6F1FB] p-6 rounded shadow">
   <h2 className="text-xl font-semibold mb-4">
     Step 1: Upload OB CSV
   </h2>
@@ -339,7 +339,7 @@ function ScheduleGeneration() {
     }
     uploadCSV();
   }}
-    className="ml-4 mt-3 bg-blue-600 text-white px-4 py-2 rounded"
+    className="ml-4 mt-3 bg-[#0C447C] text-white px-4 py-2 rounded"
   >
     Upload
   </button>
@@ -455,7 +455,7 @@ function ScheduleGeneration() {
           </Card>
 
           {summary && (
-            <div className="bg-white p-4 rounded shadow">
+            <div className="bg-[#E6F1FB]   p-4 rounded shadow">
               Total Trips: {summary.total_trips}
             </div>
           )}

@@ -167,7 +167,7 @@ function BusesDataFeed() {
       <h1 className="text-2xl font-bold">Buses Management</h1>
 
       {/* ADD BUS */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="bg-[#E6F1FB] p-6 rounded-xl shadow-md">
       <h2 className="text-lg font-semibold text-gray-800 mb-4">
         Add Bus
       </h2>
@@ -224,14 +224,14 @@ function BusesDataFeed() {
 
       <button
         onClick={addBus}
-        className="mt-5 w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+        className="mt-5 w-full py-2 bg-[#0C447C] text-white rounded-lg hover:bg-[#0A3A6A] transition"
       >
         + Add Bus
       </button>
     </div>
 
       {/* TABLE */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="bg-[#E6F1FB] p-6 rounded-xl shadow-md">
 
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
           All Buses

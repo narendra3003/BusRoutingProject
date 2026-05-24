@@ -5,7 +5,7 @@ function Home() {
   const navigate = useNavigate();
 
   return (
-  <div className="min-h-screen w-full flex flex-col bg-gradient-to-br from-purple-600 via-indigo-500 to-blue-500 text-white">
+  <div className="min-h-screen w-full flex flex-col bg-gradient-to-br from-indigo-700 via-[#0A3A6B] to-indigo-700 text-white m-0 p-0">
 
     {/* NAVBAR */}
     <div className="w-full flex justify-between items-center px-8 py-4">
@@ -16,7 +16,7 @@ function Home() {
       <div className="space-x-4">
         <button
           onClick={() => navigate("/login")}
-          className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition"
+          className="px-4 py-2 rounded-lg bg-[#0C447C] hover:bg-white/30 transition"
         >
           Login
         </button>
@@ -39,17 +39,10 @@ function Home() {
 
       <div className="flex gap-6">
         <button
-          onClick={() => navigate("/login")}
-          className="bg-white text-purple-700 font-semibold px-8 py-3 rounded-xl shadow-lg hover:bg-purple-100 transition"
+          onClick={() => navigate("/customer")}
+          className="bg-white text-[#0C447C] font-semibold px-8 py-3 rounded-xl shadow-lg hover:bg-[#B5D4F4] transition"
         >
-          Get Started
-        </button>
-
-        <button
-          onClick={() => navigate("/signup")}
-          className="bg-yellow-400 text-purple-900 font-semibold px-8 py-3 rounded-xl shadow-lg hover:bg-yellow-300 transition"
-        >
-          Create Account
+          View as Customer
         </button>
       </div>
     </div>

@@ -54,7 +54,10 @@ function AdminDashboard() {
   return (
     <div className="p-6 space-y-6">
 
-      <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+      <h1 className="text-2xl font-bold">
+      
+        Admin Dashboard</h1>
+
 
       {loading && <p>Loading...</p>}
 
@@ -71,7 +74,7 @@ function AdminDashboard() {
           {/* Stops */}
           <a
             href="/stops-data-feed"
-            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
           >
             <div className="flex items-center gap-4">
               {/* <div className="p-3 bg-purple-100 text-purple-600 rounded-xl group-hover:scale-110 transition">
@@ -91,7 +94,7 @@ function AdminDashboard() {
           {/* Routes */}
           <a
             href="/routes-data-feed"
-            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
           >
             <div className="flex items-center gap-4">
               {/* <div className="p-3 bg-blue-100 text-blue-600 rounded-xl group-hover:scale-110 transition">
@@ -112,7 +115,7 @@ function AdminDashboard() {
           {/* Route Builder */}
           <a
             href="/route-builder"
-            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
           >
             <div className="flex items-center gap-4">
               {/* <div className="p-3 bg-orange-100 text-orange-600 rounded-xl group-hover:scale-110 transition">
@@ -132,7 +135,7 @@ function AdminDashboard() {
           {/* Buses */}
           <a
             href="/buses-data-feed"
-            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
           >
             <div className="flex items-center gap-4">
               {/* <div className="p-3 bg-green-100 text-green-600 rounded-xl group-hover:scale-110 transition">
@@ -152,7 +155,7 @@ function AdminDashboard() {
           {/* Drivers */}
           <a
             href="/driver-data-feed"
-            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
           >
             <div className="flex items-center gap-4">
               {/* <div className="p-3 bg-yellow-100 text-yellow-600 rounded-xl group-hover:scale-110 transition">
@@ -171,7 +174,7 @@ function AdminDashboard() {
 
           <a
             href="/schedule"
-            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
           >
             <div className="flex items-center gap-4">
               {/* <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl group-hover:scale-110 transition">
@@ -190,7 +193,7 @@ function AdminDashboard() {
 
           <a
             href="/leave-approvals"
-            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
           >
             <div className="flex items-center gap-4">
               {/* <div className="p-3 bg-purple-100 text-purple-600 rounded-xl group-hover:scale-110 transition">
@@ -209,7 +212,7 @@ function AdminDashboard() {
 
           <a
             href="/dispatch"
-            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
           >
             <div className="flex items-center gap-4">
               {/* <div className="p-3 bg-red-100 text-red-600 rounded-xl group-hover:scale-110 transition">
@@ -226,7 +229,7 @@ function AdminDashboard() {
             </div>
           </a>
 
-          <a href="/override" className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100">
+          <a href="/override" className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100">
             <div className="flex items-center gap-4">
               {/* <div className="p-3 bg-teal-100 text-teal-600 rounded-xl group-hover:scale-110 transition">
                 <AlertTriangle size={24} />
@@ -246,28 +249,28 @@ function AdminDashboard() {
           {/* CARDS */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
-            <div className="bg-white p-4 shadow rounded text-center">
+            <div className="bg-[#E6F1FB] p-4 shadow rounded text-center">
               <p className="text-gray-500">Total Trips Today</p>
               <p className="text-2xl font-bold">
                 {data.total_trips_today}
               </p>
             </div>
 
-            <div className="bg-white p-4 shadow rounded text-center">
+            <div className="bg-[#E6F1FB] p-4 shadow rounded text-center">
               <p className="text-gray-500">Active Drivers</p>
               <p className="text-2xl font-bold">
                 {data.active_drivers}
               </p>
             </div>
 
-            <div className="bg-white p-4 shadow rounded text-center">
+            <div className="bg-[#E6F1FB] p-4 shadow rounded text-center">
               <p className="text-gray-500">Active Buses</p>
               <p className="text-2xl font-bold">
                 {data.active_buses}
               </p>
             </div>
 
-            <div className="bg-white p-4 shadow rounded text-center">
+            <div className="bg-[#E6F1FB] p-4 shadow rounded text-center">
               <p className="text-gray-500">Delayed Trips</p>
               <p className="text-2xl font-bold text-red-600">
                 {data.delayed_trips}
@@ -277,7 +280,7 @@ function AdminDashboard() {
           </div>
 
           {/* RECENT OVERRIDES */}
-          <div className="bg-white p-6 shadow rounded">
+          <div className="bg-[#E6F1FB] p-6 shadow rounded">
             <h2 className="font-semibold mb-4">
               Recent Overrides
             </h2>

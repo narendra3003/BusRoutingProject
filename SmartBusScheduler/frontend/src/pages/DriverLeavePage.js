@@ -128,7 +128,7 @@ function DriverLeavePage() {
       </div>
 
       {/* APPLY LEAVE */}
-      <div className="bg-white p-6 shadow rounded">
+      <div className="bg-[#E6F1FB] p-6 shadow rounded">
         <h2 className="font-semibold mb-4">Apply Leave</h2>
 
         <div className="grid grid-cols-3 gap-4">
@@ -188,7 +188,7 @@ function DriverLeavePage() {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 rounded ${
               activeTab === tab
-                ? "bg-purple-600 text-white"
+                ? "bg-[#0C447C] text-white"
                 : "bg-gray-200"
             }`}
           >
@@ -198,7 +198,7 @@ function DriverLeavePage() {
       </div>
 
       {/* LEAVES TABLE */}
-      <div className="bg-white p-6 shadow rounded">
+      <div className="bg-[#E6F1FB] p-6 shadow rounded">
 
         <table className="w-full border text-center">
           <thead className="bg-gray-100">

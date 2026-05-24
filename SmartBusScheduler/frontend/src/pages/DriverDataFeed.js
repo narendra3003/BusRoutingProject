@@ -177,7 +177,7 @@ function DriverDataFeed() {
       <h1 className="text-2xl font-bold">Drivers Management</h1>
 
       {/* ADD DRIVER */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="bg-[#E6F1FB] p-6 rounded-xl shadow-md">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
           Add Driver
         </h2>
@@ -248,14 +248,14 @@ function DriverDataFeed() {
 
         <button
           onClick={addDriver}
-          className="mt-5 w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          className="mt-5 w-full py-2 bg-[#0C447C] text-white rounded-lg hover:bg-[#0A3A6A] transition"
         >
           + Add Driver
         </button>
       </div>
 
       {/* TABLE */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="bg-[#E6F1FB] p-6 rounded-xl shadow-md">
 
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
           All Drivers
@@ -265,7 +265,7 @@ function DriverDataFeed() {
           placeholder="Search drivers..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:ring-2 focus:ring-purple-500 outline-none"
+          className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:ring-2 focus:ring-[#0C447C] outline-none"
         />
 
         <table className="w-full text-sm text-gray-700">

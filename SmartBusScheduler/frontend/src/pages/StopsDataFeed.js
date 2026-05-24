@@ -213,17 +213,17 @@ function StopsDataFeed() {
   // -------------------------
   return (
     <AdminLayout>
-    <div className="p-6 space-y-8">
+    <div className="  p-6 space-y-8">
       <h1 className="text-2xl font-bold">Stops Management</h1>
 
       {/* TOP SECTION */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className=" w-full mx-auto center grid md:grid-cols-2 gap-6">
 
         {/* ADD STOP */}
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Add Stop
-          </h2>
+          <div className=" w-full max-w-md   bg-[#E6F1FB] p-6 rounded-xl shadow-md">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Add Stop
+            </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -280,7 +280,7 @@ function StopsDataFeed() {
 
           <button
             onClick={addStop}
-            className="mt-5 w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+            className="mt-5 w-full py-2 bg-[#0C447A] text-white rounded-lg hover:bg-[#0A3A6A] transition"
           >
             + Add Stop
           </button>
@@ -321,7 +321,7 @@ function StopsDataFeed() {
       </div>
 
       {/* TABLE */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="bg-[#E6F1FB] p-6 rounded-xl shadow-md">
 
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
           All Stops
@@ -331,7 +331,7 @@ function StopsDataFeed() {
           placeholder="Search by name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:ring-2 focus:ring-purple-500 outline-none"
+          className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:ring-2 focus:ring-[#0C447C] outline-none"
         />
 
         <table className="w-full text-sm text-gray-700">
@@ -342,8 +342,6 @@ function StopsDataFeed() {
               <th className="px-4 py-3">Zone</th>
               <th className="px-4 py-3">Lat</th>
               <th className="px-4 py-3">Lon</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
@@ -361,26 +359,6 @@ function StopsDataFeed() {
                 <td className="px-4 py-3">{s.zone}</td>
                 <td className="px-4 py-3">{s.lat}</td>
                 <td className="px-4 py-3">{s.lon}</td>
-
-                {/* TYPE BADGE */}
-                <td className="px-4 py-3">
-                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
-                    {s.type}
-                  </span>
-                </td>
-
-                {/* STATUS BADGE */}
-                <td className="px-4 py-3">
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      s.is_active
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {s.is_active ? "Active" : "Inactive"}
-                  </span>
-                </td>
 
                 {/* ACTIONS */}
                 <td className="px-4 py-3 flex justify-center gap-2">
@@ -422,7 +400,7 @@ function StopsDataFeed() {
     ></div>
 
     {/* MODAL */}
-    <div className="relative bg-white w-full max-w-lg rounded-xl shadow-lg p-6">
+    <div className="relative bg-[#F0F8FF] w-full max-w-lg rounded-xl shadow-lg p-6">
 
       <h2 className="text-lg font-semibold mb-4">Edit Stop</h2>
 

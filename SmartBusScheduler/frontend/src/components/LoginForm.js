@@ -44,7 +44,7 @@ function LoginForm() {
   };
 
   return (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 to-indigo-100">
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0C447C] to-indigo-100">
 
     {/* CARD */}
     <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-lg">
@@ -66,7 +66,7 @@ function LoginForm() {
           placeholder="Username"
           value={username}
           onChange={e => setUsername(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0C447C]"
         />
 
         <input
@@ -74,12 +74,12 @@ function LoginForm() {
           placeholder="Password"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0C447C]"
         />
 
         <button
           onClick={handleLogin}
-          className="w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+          className="w-full py-2 bg-[#0C447C] text-white rounded-lg hover:bg-[#0A3A6B] transition font-medium"
         >
           Login
         </button>

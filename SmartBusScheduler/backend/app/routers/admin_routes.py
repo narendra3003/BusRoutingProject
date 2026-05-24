@@ -79,6 +79,7 @@ def create_route(
     db.add(route)
     db.commit()
     db.refresh(route)
+    # calls to add start and end stops to route_stops table can be made here
 
     return format_route(route)
 

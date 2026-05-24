@@ -100,7 +100,7 @@ function LeaveApprovalPage() {
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200
               ${
                 activeTab === tab
-                  ? "bg-white shadow text-purple-600"
+                  ? "bg-[#E6F1FB] shadow text-[#0C447C]"
                   : "text-gray-600 hover:text-gray-800"
               }`}
           >
@@ -110,7 +110,7 @@ function LeaveApprovalPage() {
       </div>
 
       {/* TABLE */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
+      <div className="bg-[#E6F1FB] rounded-xl shadow-md overflow-hidden">
 
         {loading && <p>Loading...</p>}
 

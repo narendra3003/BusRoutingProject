@@ -182,14 +182,14 @@ function RouteBuilder() {
         </div>
 
         {/* SELECT ROUTE */}
-        <div className="bg-white p-5 rounded-xl shadow-md">
+        <div className="bg-[#E6F1FB] p-5 rounded-xl shadow-md">
           <label className="block text-sm font-medium text-gray-600 mb-2">
             Select Route
           </label>
           <select
             value={selectedRoute}
             onChange={(e) => setSelectedRoute(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0C447C]"
           >
             <option value="">Select Route</option>
             {routes.map((r) => (
@@ -204,7 +204,7 @@ function RouteBuilder() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
           {/* LEFT: ALL STOPS */}
-          <div className="bg-white p-5 rounded-xl shadow-md">
+          <div className="bg-[#E6F1FB] p-5 rounded-xl shadow-md">
             <h2 className="text-md font-semibold text-gray-800 mb-3">
               All Stops
             </h2>
@@ -213,7 +213,7 @@ function RouteBuilder() {
               placeholder="Search stops..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[#0C447C]"
             />
 
             <div className="max-h-96 overflow-y-auto space-y-2 pr-1">
@@ -238,7 +238,7 @@ function RouteBuilder() {
           </div>
 
           {/* RIGHT: SELECTED STOPS */}
-          <div className="bg-white p-5 rounded-xl shadow-md">
+          <div className="bg-[#E6F1FB]  p-5 rounded-xl shadow-md">
             <h2 className="text-md font-semibold text-gray-800 mb-3">
               Route Stops (Ordered)
             </h2>

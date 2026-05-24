@@ -139,7 +139,7 @@ function OverridePage() {
       <h1 className="text-2xl font-bold">Override Management</h1>
 
       {/* SELECT TRIP */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="bg-[#E6F1FB] p-6 rounded-xl shadow-md">
       <h2 className="text-lg font-semibold text-gray-800 mb-4">
         Select Trip
       </h2>
@@ -155,7 +155,7 @@ function OverridePage() {
 
         <button
           onClick={fetchTrips}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          className="px-4 py-2 bg-[#0C447C] text-white rounded-lg hover:bg-[#0A3A6A] transition"
         >
           Load Trips
         </button>
@@ -335,7 +335,7 @@ function OverridePage() {
         Override History
       </h2>
 
-      <table className="w-full text-sm text-gray-700">
+      <table className="w-full bg-[#E6F1FB] text-sm text-gray-700">
         <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
           <tr>
             <th className="px-4 py-3">Trip</th>

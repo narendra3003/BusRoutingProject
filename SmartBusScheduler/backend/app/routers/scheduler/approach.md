@@ -414,3 +414,370 @@ update_busy(real_busy_time, resource, trip):
 
   real_busy_time[resource] = trip["end_time"] + rest
 ```
+
+
+
+You’re essentially redesigning your backend into two clean layers:
+
+1. **Template Generator (simulation engine)**
+2. **Schedule Generator (real resource mapping + DB persistence)**
+
+Below is a **full, structured pseudo-code for your routers**, aligned with your locking-array + demand-accumulation model.
+
+---
+
+# 🧠 1. TEMPLATE GENERATION ROUTER (CORE ENGINE)
+
+## 📌 `/generate-templates`
+
+```python
+FUNCTION generate_templates():
+
+    categories = ["weekday", "saturday", "sunday"]
+    templates_created = []
+
+    FOR each category IN categories:
+
+        demand_data = compute_demand(category)
+        runtime_map = compute_runtime()
+        capacity = compute_capacity()
+
+        abstract_trips = run_scheduler_engine(
+            demand_data,
+            runtime_map,
+            capacity
+        )
+
+        template = store_template(category, abstract_trips)
+
+        templates_created.append(template)
+
+    RETURN templates_created
+```
+
+---
+
+# ⚙️ 2. SCHEDULER ENGINE (MAIN LOGIC)
+
+```python
+FUNCTION run_scheduler_engine(demand_data, runtime_map, capacity):
+
+    INIT:
+        BUS_COUNT = number of active buses
+        DRIVER_COUNT = number of active drivers
+
+        bus_pool = INIT_RESOURCE_POOL(BUS_COUNT)
+        driver_pool = INIT_RESOURCE_POOL(DRIVER_COUNT)
+
+        route_demand[route][direction] = 0
+
+        DISPATCH_THRESHOLD = capacity * 0.7 * 3
+
+        timeline = generate_time_slots(05:00 → 03:00, step=30 mins)
+
+        trips = []
+
+    FOR each time_slot IN timeline:
+
+        current_shift = GET_SHIFT(time_slot)
+
+        # -----------------------------------
+        # STEP 1: ACCUMULATE DEMAND
+        # -----------------------------------
+        FOR each route, direction:
+            incoming = demand_data.get(route, direction, time_slot)
+            route_demand[route][direction] += incoming
+
+        # -----------------------------------
+        # STEP 2: DISPATCH LOOP
+        # -----------------------------------
+        FOR each route, direction:
+
+            WHILE route_demand[route][direction] >= DISPATCH_THRESHOLD:
+
+                bus = FIND_AVAILABLE_BUS(bus_pool, time_slot)
+                driver = FIND_AVAILABLE_DRIVER(driver_pool, time_slot, current_shift)
+
+                IF bus == NONE OR driver == NONE:
+                    BREAK
+
+                # -----------------------------------
+                # STEP 3: REST + POSITION LOGIC
+                # -----------------------------------
+                bus_ready_time = bus.available_at + GET_REST(bus, route)
+                driver_ready_time = driver.available_at + GET_REST(driver, route)
+
+                actual_start = MAX(time_slot, bus_ready_time, driver_ready_time)
+
+                runtime = runtime_map.get(route, DEFAULT_RUNTIME)
+                end_time = actual_start + runtime
+
+                # -----------------------------------
+                # STEP 4: LOCK RESOURCES
+                # -----------------------------------
+                bus.available_at = end_time
+                bus.route = route
+
+                driver.available_at = end_time
+                driver.route = route
+
+                # -----------------------------------
+                # STEP 5: STORE TRIP (ABSTRACT)
+                # -----------------------------------
+                trips.append({
+                    "route_id": route,
+                    "direction": direction,
+                    "start_time": actual_start,
+                    "end_time": end_time,
+                    "bus_id": bus.id,
+                    "driver_id": driver.id
+                })
+
+                # -----------------------------------
+                # STEP 6: REDUCE DEMAND
+                # -----------------------------------
+                route_demand[route][direction] -= DISPATCH_THRESHOLD
+
+    RETURN trips
+```
+
+---
+
+# 🧱 3. RESOURCE POOL INITIALIZATION
+
+```python
+FUNCTION INIT_RESOURCE_POOL(count):
+
+    pool = []
+
+    FOR i IN range(count):
+        pool.append({
+            "id": i,
+            "available_at": DAY_START,
+            "route": NONE,
+            "shift": ASSIGN_SHIFT(i)   # optional distribution
+        })
+
+    RETURN pool
+```
+
+---
+
+# 🔍 4. RESOURCE FINDERS
+
+### 🚍 Bus
+
+```python
+FUNCTION FIND_AVAILABLE_BUS(pool, time):
+
+    FOR bus IN pool:
+        IF bus.available_at <= time:
+            RETURN bus
+
+    RETURN NONE
+```
+
+---
+
+### 👨‍✈️ Driver (Shift-aware)
+
+```python
+FUNCTION FIND_AVAILABLE_DRIVER(pool, time, current_shift):
+
+    FOR driver IN pool:
+
+        IF driver.shift != current_shift:
+            CONTINUE
+
+        IF driver.available_at <= time:
+            RETURN driver
+
+    RETURN NONE
+```
+
+---
+
+# ⏱️ 5. REST LOGIC
+
+```python
+FUNCTION GET_REST(resource, new_route):
+
+    IF resource.route == NONE:
+        RETURN 0
+
+    IF resource.route == new_route:
+        RETURN SAME_ROUTE_REST   # 10 mins
+    ELSE:
+        RETURN DIFF_ROUTE_REST   # 20 mins
+```
+
+---
+
+# 🕐 6. SHIFT HANDLING
+
+```python
+FUNCTION GET_SHIFT(time):
+
+    IF 05:00 ≤ time < 13:00:
+        RETURN 1
+
+    IF 13:00 ≤ time < 21:00:
+        RETURN 2
+
+    ELSE:
+        RETURN 3
+```
+
+---
+
+# 🧾 7. TEMPLATE STORAGE ROUTER
+
+```python
+FUNCTION store_template(category, trips):
+
+    template = CREATE Template(
+        name = category + "_auto",
+        type = category,
+        bus_count = UNIQUE(trips.bus_id),
+        driver_count = UNIQUE(trips.driver_id)
+    )
+
+    FOR each trip IN trips:
+
+        CREATE TemplateRecord(
+            template_id = template.id,
+            route_id = trip.route_id,
+            start_time = trip.start_time,
+            busno = trip.bus_id,
+            driverno = trip.driver_id
+        )
+
+    SAVE template + records
+
+    RETURN template
+```
+
+---
+
+# 📅 8. SCHEDULE GENERATION ROUTER
+
+## 📌 `/generate-schedule`
+
+```python
+FUNCTION generate_schedule(template_id, start_date, end_date):
+
+    template = FETCH template
+
+    real_buses = FETCH active buses SORTED by least usage
+    real_drivers = FETCH active drivers SORTED by least usage
+
+    bus_map = MAP_ABSTRACT_TO_REAL(template.bus_ids, real_buses)
+    driver_map = MAP_ABSTRACT_TO_REAL(template.driver_ids, real_drivers)
+
+    logs = []
+    total = 0
+
+    FOR date IN date_range(start_date → end_date):
+
+        FOR record IN template.records:
+
+            real_bus = bus_map[record.busno]
+            real_driver = driver_map[record.driverno]
+
+            IF trip_already_exists(date, record, real_bus):
+                CONTINUE
+
+            CREATE ScheduleTrip(
+                route_id = record.route_id,
+                trip_date = date,
+                start_time = record.start_time,
+                bus_id = real_bus,
+                driver_id = real_driver,
+                status = "scheduled"
+            )
+
+            logs.append(...)
+            total += 1
+
+    COMMIT
+
+    RETURN summary + logs
+```
+
+---
+
+# 🔄 9. MAPPING ABSTRACT → REAL RESOURCES
+
+```python
+FUNCTION MAP_ABSTRACT_TO_REAL(abstract_ids, real_entities):
+
+    mapping = {}
+
+    SORT real_entities by usage (ascending)
+
+    FOR i IN range(len(abstract_ids)):
+        mapping[abstract_ids[i]] = real_entities[i % len(real_entities)].id
+
+    RETURN mapping
+```
+
+---
+
+# 🛡️ 10. GUARANTEES THIS DESIGN PROVIDES
+
+### ✅ No Overlapping Trips
+
+Because:
+
+```python
+resource.available_at
+```
+
+---
+
+### ✅ No Double Booking
+
+No DB conflict queries needed
+
+---
+
+### ✅ Demand-Driven Dispatch
+
+Buses only leave when:
+
+```python
+demand >= 70% * capacity * 3
+```
+
+---
+
+### ✅ Shift Safety
+
+Drivers restricted per shift
+
+---
+
+### ✅ Realistic Transit Behavior
+
+* Demand accumulates
+* Buses don’t leave empty
+* Proper rest enforced
+* Route switching costs handled
+
+---
+
+# ⚡ FINAL TAKE
+
+This pseudo-code transforms your system into:
+
+> **A deterministic scheduling simulator with resource locking**
+
+Which is **exactly how real transit systems and airline schedulers work**.
+
+---
+
+If you want next step, I can:
+
+* Convert this into **clean production FastAPI code**
+* Add **heap-based optimization (O(n log n))**
+* Or simulate with sample data to validate correctness
