@@ -9,6 +9,19 @@ import DriverDashboard from "./pages/DriverDashboard";
 import Signup from "./components/SignUp";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Unauthorized from "./pages/Unauthorized";
+import StopsDataFeed from "./pages/StopsDataFeed";
+import RoutesDataFeed from "./pages/RoutesDataFeed";
+import BusDataFeed from "./pages/BusDataFeed";
+import RouteBuilder from "./pages/RouteBuilder";
+import DriverDataFeed from "./pages/DriverDataFeed";
+import ScheduleManagement from "./pages/ScheduleManagement";
+import SmartScheduleBuilder from "./pages/BulkManagement";
+import LeaveApprovalPage from "./pages/LeaveApprovalPage";
+import OverridePage from "./pages/OverridePage";
+import DispatchPage from "./pages/DispatchPage";
+import DriverLeavePage from "./pages/DriverLeavePage";
+import ConductorDashboard from "./pages/conductor";
+import AdminScheduleManagement from "./pages/schedule";
 
 function App() {
   const location = useLocation();
@@ -31,11 +44,22 @@ function App() {
           <Route
             path="/customer"
             element={
-              <ProtectedRoute allowedRoles={["customer"]}>
                 <CustomerDashboard />
-              </ProtectedRoute>
             }
           />
+          {/* <Route
+            path="/conductor/dashboard"
+            element={
+                <ConductorDashboard />
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+                <AdminScheduleManagement />
+            }
+          />
+          */}
 
           <Route
             path="/admin"
@@ -54,6 +78,79 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/stops-data-feed" 
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <StopsDataFeed />
+              </ProtectedRoute>
+            }/>
+        <Route path="/routes-data-feed" 
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <RoutesDataFeed />
+              </ProtectedRoute>
+            }/>
+        <Route path="/buses-data-feed" 
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <BusDataFeed />
+              </ProtectedRoute>
+            }/>
+          <Route path="/route-builder"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <RouteBuilder />
+              </ProtectedRoute>
+            }/>
+            <Route path="/driver-data-feed"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DriverDataFeed />
+                </ProtectedRoute>
+              }
+            />
+              <Route path="/schedule"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <ScheduleManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/bulk-management"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <SmartScheduleBuilder />
+                    </ProtectedRoute>
+                  }
+              />
+              <Route path="/leave-approvals"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <LeaveApprovalPage />
+                    </ProtectedRoute>
+                  }
+              />
+              <Route path="/override"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <OverridePage />
+                    </ProtectedRoute>
+                  }
+              />
+              <Route path="/dispatch"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DispatchPage />
+                    </ProtectedRoute>
+                  }
+              />
+              <Route path="/driver/leave"
+                  element={
+                    <ProtectedRoute allowedRoles={["driver"]}>
+                      <DriverLeavePage />
+                    </ProtectedRoute>
+                  }
+              />
         </Routes>
       </div>
     </div>

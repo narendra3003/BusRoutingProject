@@ -23,7 +23,7 @@ function Navbar() {
   };
 
   return (
-    <nav className="bg-purple-700 text-white p-4 flex justify-between items-center">
+    <nav className="bg-[#185FA5] text-white p-4 flex justify-between items-center">
       <div
         onClick={() => navigate("/")}
         className="font-bold text-lg cursor-pointer hover:text-gray-200"

@@ -1,238 +1,302 @@
 # crud.py
 from sqlalchemy.orm import Session
-from typing import List, Optional
-from datetime import date
-
+from sqlalchemy import and_
 from . import models, schemas
+import database as db
 
-# -----------------
-# User CRUD
-# -----------------
-def create_user(db: Session, user_in: schemas.UserCreate) -> models.User:
-    # password hashing should be added in utils/auth but omitted per instruction
-    new = models.User(
-        name=user_in.name,
-        email=user_in.email,
-        role=user_in.role,
-        password_hash=user_in.password  # replace with hashed value when adding auth
+# =========================
+# USERS
+# =========================
+
+def create_user(db: Session, user: schemas.UserCreate, password_hash: str):
+    db_user = models.User(
+        email=user.email,
+        pass_hash=password_hash,
+        name=user.name,
+        phone=user.phone,
+        role=user.role
     )
-    db.add(new)
+    db.add(db_user)
     db.commit()
-    db.refresh(new)
-    return new
+    db.refresh(db_user)
+    return db_user
 
-def get_user_by_id(db: Session, user_id: int) -> Optional[models.User]:
-    return db.query(models.User).filter(models.User.user_id == user_id).first()
 
-def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
+def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
-def list_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]:
+
+def get_user(db: Session, user_id: int):
+    return db.query(models.User).filter(models.User.id == user_id).first()
+
+
+def get_users(db: Session, skip: int = 0, limit: int = 50):
     return db.query(models.User).offset(skip).limit(limit).all()
 
 
-# -----------------
-# Stops CRUD
-# -----------------
-def create_stop(db: Session, stop_in: schemas.StopCreate) -> models.Stop:
-    new = models.Stop(
-        stop_code=stop_in.stop_code,
-        stop_name=stop_in.stop_name,
-        stop_lat=stop_in.stop_lat,
-        stop_lon=stop_in.stop_lon
+def deactivate_user(db: Session, user_id: int):
+    user = get_user(db, user_id)
+    if user:
+        user.is_active = False
+        db.commit()
+        db.refresh(user)
+    return user
+
+
+# =========================
+# DRIVERS
+# =========================
+
+def create_driver(db: Session, driver: schemas.DriverCreate):
+    db_driver = models.Driver(**driver.model_dump())
+    db.add(db_driver)
+    db.commit()
+    db.refresh(db_driver)
+    return db_driver
+
+
+def get_driver(db: Session, driver_id: int):
+    return db.query(models.Driver).filter(models.Driver.user_id == driver_id).first()
+
+
+def get_all_drivers(db: Session):
+    return db.query(models.Driver).all()
+
+
+# =========================
+# BUSES
+# =========================
+
+def create_bus(db: Session, bus: schemas.BusCreate):
+    db_bus = models.Bus(**bus.model_dump())
+    db.add(db_bus)
+    db.commit()
+    db.refresh(db_bus)
+    return db_bus
+
+
+def get_bus(db: Session, bus_id: int):
+    return db.query(models.Bus).filter(models.Bus.id == bus_id).first()
+
+
+def get_buses(db: Session):
+    return db.query(models.Bus).all()
+
+
+def update_bus_status(db: Session, bus_id: int, status):
+    bus = get_bus(db, bus_id)
+    if bus:
+        bus.status = status
+        db.commit()
+        db.refresh(bus)
+    return bus
+
+
+# =========================
+# STOPS
+# =========================
+
+def create_stop(db: Session, stop: schemas.StopCreate):
+    db_stop = models.Stop(**stop.model_dump())
+    db.add(db_stop)
+    db.commit()
+    db.refresh(db_stop)
+    return db_stop
+
+
+def get_stop(db: Session, stop_id: int):
+    return db.query(models.Stop).filter(models.Stop.id == stop_id).first()
+
+
+def get_stops(db: Session):
+    return db.query(models.Stop).filter(models.Stop.is_active == True).all()
+
+
+# =========================
+# ROUTES
+# =========================
+
+def create_route(db: Session, route: schemas.RouteCreate):
+    db_route = models.Route(**route.model_dump())
+    db.add(db_route)
+    db.commit()
+    db.refresh(db_route)
+    return db_route
+
+
+def get_route(db: Session, route_id: str):
+    return db.query(models.Route).filter(models.Route.id == route_id).first()
+
+
+def get_routes(db: Session):
+    return db.query(models.Route).all()
+
+
+# =========================
+# ROUTE STOPS
+# =========================
+
+def add_stop_to_route(db: Session, route_stop: schemas.RouteStopCreate):
+    db_obj = models.RouteStop(**route_stop.model_dump())
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return db_obj
+
+
+def get_route_stops(db: Session, route_id: str):
+    return (
+        db.query(models.RouteStop)
+        .filter(models.RouteStop.route_id == route_id)
+        .order_by(models.RouteStop.seq)
+        .all()
     )
-    db.add(new)
+
+
+# =========================
+# DRIVER LEAVE
+# =========================
+
+def apply_driver_leave(db: Session, leave: schemas.DriverLeaveCreate):
+    db_leave = models.DriverLeave(**leave.model_dump())
+    db.add(db_leave)
     db.commit()
-    db.refresh(new)
-    return new
-
-def get_stop(db: Session, stop_id: int) -> Optional[models.Stop]:
-    return db.query(models.Stop).filter(models.Stop.stop_id == stop_id).first()
-
-def list_stops(db: Session, skip: int = 0, limit: int = 100) -> List[models.Stop]:
-    return db.query(models.Stop).offset(skip).limit(limit).all()
+    db.refresh(db_leave)
+    return db_leave
 
 
-# -----------------
-# Routes CRUD
-# -----------------
-def create_route(db: Session, route_in: schemas.RouteCreate) -> models.Route:
-    new = models.Route(
-        route_short_name=route_in.route_short_name,
-        route_long_name=route_in.route_long_name,
-        stops=route_in.stops
+def get_driver_leaves(db: Session, driver_id: int):
+    return (
+        db.query(models.DriverLeave)
+        .filter(models.DriverLeave.driver_id == driver_id)
+        .all()
     )
-    db.add(new)
+
+
+def update_leave_status(db: Session, leave_id: int, status):
+    leave = db.query(models.DriverLeave).filter(models.DriverLeave.id == leave_id).first()
+
+    if leave:
+        leave.status = status
+        db.commit()
+        db.refresh(leave)
+
+    return leave
+
+
+# =========================
+# TRIPS
+# =========================
+
+def create_trip(db: Session, trip: schemas.TripCreate):
+    db_trip = models.ScheduleTrip(**trip.model_dump())
+    db.add(db_trip)
     db.commit()
-    db.refresh(new)
-    return new
-
-def get_route(db: Session, route_id: int) -> Optional[models.Route]:
-    return db.query(models.Route).filter(models.Route.route_id == route_id).first()
-
-def list_routes(db: Session, skip: int = 0, limit: int = 100) -> List[models.Route]:
-    return db.query(models.Route).offset(skip).limit(limit).all()
-
-def update_route_stops(db: Session, route_id: int, stops: List[int]) -> Optional[models.Route]:
-    route = get_route(db, route_id)
-    if not route:
-        return None
-    route.stops = stops
-    db.commit()
-    db.refresh(route)
-    return route
+    db.refresh(db_trip)
+    return db_trip
 
 
-# -----------------
-# Service CRUD
-# -----------------
-def create_service(db: Session, svc_in: schemas.ServiceCreate) -> models.Service:
-    new = models.Service(driver_id=svc_in.driver_id, conductor_id=svc_in.conductor_id, notes=svc_in.notes)
-    db.add(new)
-    db.commit()
-    db.refresh(new)
-    return new
-
-def get_service(db: Session, service_id: int) -> Optional[models.Service]:
-    return db.query(models.Service).filter(models.Service.service_id == service_id).first()
+def get_trip(db: Session, trip_id: int):
+    return db.query(models.ScheduleTrip).filter(models.ScheduleTrip.id == trip_id).first()
 
 
-# -----------------
-# Trip CRUD
-# -----------------
-def create_trip(db: Session, trip_in: schemas.TripCreate) -> models.Trip:
-    new = models.Trip(route_id=trip_in.route_id, service_id=trip_in.service_id, date=trip_in.date)
-    db.add(new)
-    db.commit()
-    db.refresh(new)
-    return new
-
-def get_trip(db: Session, trip_id: int) -> Optional[models.Trip]:
-    return db.query(models.Trip).filter(models.Trip.trip_id == trip_id).first()
-
-def list_trips_on_date(db: Session, trip_date: date) -> List[models.Trip]:
-    return db.query(models.Trip).filter(models.Trip.date == trip_date).all()
-
-def assign_service_to_trip(db: Session, trip_id: int, service_id: int) -> Optional[models.Trip]:
-    trip = get_trip(db, trip_id)
-    if not trip:
-        return None
-    trip.service_id = service_id
-    db.commit()
-    db.refresh(trip)
-    return trip
-
-def delete_trip(db: Session, trip_id: int) -> Optional[models.Trip]:
-    trip = get_trip(db, trip_id)
-    if not trip:
-        return None
-    db.delete(trip)
-    db.commit()
-    return trip
-
-
-# -----------------
-# StopTime CRUD
-# -----------------
-def create_stop_time(db: Session, st_in: schemas.StopTimeCreate) -> models.StopTime:
-    new = models.StopTime(
-        trip_id=st_in.trip_id,
-        stop_id=st_in.stop_id,
-        arrival_time=st_in.arrival_time,
-        departure_time=st_in.departure_time,
-        boarding_in=st_in.boarding_in or 0,
-        boarding_out=st_in.boarding_out or 0
-    )
-    db.add(new)
-    db.commit()
-    db.refresh(new)
-    return new
-
-def list_stop_times_for_trip(db: Session, trip_id: int) -> List[models.StopTime]:
-    return db.query(models.StopTime).filter(models.StopTime.trip_id == trip_id).order_by(models.StopTime.id).all()
-
-def update_stop_time_boarding(db: Session, stop_time_id: int, boarding_in: Optional[int] = None, boarding_out: Optional[int] = None):
-    st = db.query(models.StopTime).filter(models.StopTime.id == stop_time_id).first()
-    if not st:
-        return None
-    if boarding_in is not None:
-        st.boarding_in = boarding_in
-    if boarding_out is not None:
-        st.boarding_out = boarding_out
-    db.commit()
-    db.refresh(st)
-    return st
-
-
-# -----------------
-# AdminOverride CRUD
-# -----------------
-def add_admin_override(db: Session, ov_in: schemas.AdminOverrideCreate) -> models.AdminOverride:
-    new = models.AdminOverride(
-        trip_id=ov_in.trip_id,
-        delta_minutes=ov_in.delta_minutes,
-        effective_date=ov_in.effective_date,
-        reason=ov_in.reason
-    )
-    db.add(new)
-    db.commit()
-    db.refresh(new)
-    return new
-
-def get_overrides_for_trip(db: Session, trip_id: int) -> List[models.AdminOverride]:
-    return db.query(models.AdminOverride).filter(models.AdminOverride.trip_id == trip_id).all()
-
-
-# -----------------
-# ObservationData CRUD
-# -----------------
-def add_observation(db: Session, obs_in: schemas.ObservationCreate) -> models.ObservationData:
-    new = models.ObservationData(
-        bus_no=obs_in.bus_no,
-        route_id=obs_in.route_id,
-        stop_id=obs_in.stop_id,
-        boarding_count=obs_in.boarding_count,
-        alighting_count=obs_in.alighting_count,
-        timestamp=obs_in.timestamp
-    )
-    db.add(new)
-    db.commit()
-    db.refresh(new)
-    return new
-
-def add_observations_batch(db: Session, obs_list: List[schemas.ObservationCreate]) -> List[models.ObservationData]:
-    created = []
-    for obs in obs_list:
-        created.append(add_observation(db, obs))
-    return created
-
-def get_observations_for_route_date(db: Session, route_id: int, start_ts, end_ts) -> List[models.ObservationData]:
-    return db.query(models.ObservationData).filter(
-        models.ObservationData.route_id == route_id,
-        models.ObservationData.timestamp >= start_ts,
-        models.ObservationData.timestamp <= end_ts
+def get_trips_by_date(db: Session, trip_date):
+    return db.query(models.ScheduleTrip).filter(
+        models.ScheduleTrip.trip_date == trip_date
     ).all()
 
 
-# -----------------
-# BusData & CrewData CRUD
-# -----------------
-def create_bus_data(db: Session, bus_in: schemas.BusDataCreate) -> models.BusData:
-    new = models.BusData(passenger_cap_count=bus_in.passenger_cap_count)
-    db.add(new)
+def get_driver_trips(db: Session, driver_id: int, trip_date):
+    return db.query(models.ScheduleTrip).filter(
+        and_(
+            models.ScheduleTrip.driver_id == driver_id,
+            models.ScheduleTrip.trip_date == trip_date
+        )
+    ).all()
+
+
+# =========================
+# TRIP OVERRIDES
+# =========================
+
+def create_override(db: Session, override: schemas.OverrideCreate, user_id: int):
+    db_override = models.Override(
+        **override.model_dump(),
+        created_by=user_id
+    )
+    db.add(db_override)
     db.commit()
-    db.refresh(new)
-    return new
+    db.refresh(db_override)
+    return db_override
 
-def get_bus(db: Session, bus_id: int) -> Optional[models.BusData]:
-    return db.query(models.BusData).filter(models.BusData.bus_id == bus_id).first()
 
-def create_crew(db: Session, crew_in: schemas.CrewDataCreate) -> models.CrewData:
-    new = models.CrewData(name=crew_in.name, post=crew_in.post, experience=crew_in.experience)
-    db.add(new)
+# =========================
+# LIVE TRIP STATUS
+# =========================
+
+def update_trip_live_status(
+    db: Session,
+    trip_id: int,
+    lat: float,
+    lon: float,
+    stop_id: int | None = None,
+    delay: int = 0
+):
+
+    status = db.query(models.TripLiveStatus).filter(
+        models.TripLiveStatus.trip_id == trip_id
+    ).first()
+
+    if not status:
+        status = models.TripLiveStatus(
+            trip_id=trip_id,
+            last_lat=lat,
+            last_lon=lon,
+            current_stop_id=stop_id,
+            delay_minutes=delay
+        )
+        db.add(status)
+    else:
+        status.last_lat = lat
+        status.last_lon = lon
+        status.current_stop_id = stop_id
+        status.delay_minutes = delay
+
     db.commit()
-    db.refresh(new)
-    return new
+    db.refresh(status)
 
-def get_crew(db: Session, crew_id: int) -> Optional[models.CrewData]:
-    return db.query(models.CrewData).filter(models.CrewData.crew_id == crew_id).first()
+    return status
+
+
+# =========================
+# NOTIFICATIONS
+# =========================
+
+def create_notification(db: Session, notif: schemas.NotificationCreate):
+    db_notif = models.Notification(**notif.model_dump())
+    db.add(db_notif)
+    db.commit()
+    db.refresh(db_notif)
+    return db_notif
+
+
+def get_user_notifications(db: Session, user_id: int):
+    return (
+        db.query(models.Notification)
+        .filter(models.Notification.user_id == user_id)
+        .order_by(models.Notification.created_at.desc())
+        .all()
+    )
+
+
+def mark_notification_read(db: Session, notif_id: int):
+    notif = db.query(models.Notification).filter(
+        models.Notification.id == notif_id
+    ).first()
+
+    if notif:
+        notif.is_read = True
+        db.commit()
+        db.refresh(notif)
+
+    return notif

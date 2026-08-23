@@ -1,197 +1,320 @@
-import React, { useState } from "react";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
+import React, { useEffect, useState } from "react";
 
 function AdminDashboard() {
-  const [files, setFiles] = useState({
-    stops_data: null,
-    routes_data: null,
-    routes_timeplan: null,
-    buses_data: null,
-    drivers_data: null,
-    observations_data: null,
-  });
-  const [errors, setErrors] = useState([]);
-  const [schedule, setSchedule] = useState([]);
-  const [expandedBus, setExpandedBus] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const REQUIRED_KEYS = Object.keys(files);
-
-  // ------------------------------
-  // File input handling
-  // ------------------------------
-  const handleFileChange = (key, file) => {
-    setFiles((prev) => ({ ...prev, [key]: file }));
-  };
-
-  // ------------------------------
-  // Validation
-  // ------------------------------
-  const validateFiles = () => {
-    const newErrors = [];
-
-    REQUIRED_KEYS.forEach((key) => {
-      const file = files[key];
-      if (!file) {
-        newErrors.push(`${key} not selected`);
-      } else if (!file.name.toLowerCase().endsWith(".csv")) {
-        newErrors.push(`${key} must be a .csv file`);
-      }
-    });
-
-    setErrors(newErrors);
-    if (newErrors.length > 0) {
-      alert("Please fix the errors before uploading!");
-      return false;
-    }
-    return true;
-  };
-
-  // ------------------------------
-  // Backend call
-  // ------------------------------
-  const handleUpload = async () => {
-    if (!validateFiles()) return;
-
-    setLoading(true);
-    setErrors([]);
-    setSchedule([]);
-
+  // -------------------------
+  // FETCH DASHBOARD DATA
+  // -------------------------
+  const fetchDashboard = async () => {
     try {
-      const formData = new FormData();
-      formData.append("stops", files.stops_data);
-      formData.append("routes", files.routes_data);
-      formData.append("routes_timeplan", files.routes_timeplan);
-      formData.append("buses", files.buses_data);
-      formData.append("drivers", files.drivers_data);
-      formData.append("observations", files.observations_data);
+      setLoading(true);
 
-      // Optional GA params
-      formData.append("pop_size", 30);
-      formData.append("ngen", 40);
+      const res = await fetch(
+        "http://localhost:8000/analytics/dashboard",
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          },
+        }
+      );
 
-      const res = await fetch("http://localhost:8000/admin/optimize", {
-        method: "POST",
-        body: formData,
-      });
+      if (!res.ok) throw new Error("Failed to load dashboard");
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Optimization failed");
+      const result = await res.json();
+      setData(result);
+
+      /*
+      RESPONSE:
+      {
+        total_trips_today: 42,
+        active_drivers: 18,
+        active_buses: 12,
+        delayed_trips: 5,
+        recent_overrides: [...]
       }
+      */
 
-      const data = await res.json();
-
-      alert("✅ Optimization completed successfully!");
-      console.log("Server response:", data);
-
-      // Display preview schedule from backend
-      setSchedule(data.preview || []);
     } catch (err) {
-      console.error(err);
-      alert(`❌ Upload failed: ${err.message}`);
+      setMessage(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleBus = (busNumber) => {
-    setExpandedBus(expandedBus === busNumber ? null : busNumber);
-  };
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
 
-  // ------------------------------
-  // UI rendering
-  // ------------------------------
+  // -------------------------
+  // UI
+  // -------------------------
   return (
-    <div className="p-6 space-y-8">
-      {/* Dataset Uploader */}
-      <div className="bg-white p-4 shadow rounded">
-        <h2 className="text-xl font-bold mb-3">Upload Required Dataset Files</h2>
+    <div className="p-6 space-y-6">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {REQUIRED_KEYS.map((key) => (
-            <div key={key} className="flex flex-col">
-              <label className="font-semibold mb-1 capitalize">
-                {key.replace("_", " ")}:
-              </label>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={(e) => handleFileChange(key, e.target.files[0])}
-              />
-              {files[key] && (
-                <span className="text-green-600 text-sm mt-1">
-                  ✅ {files[key].name}
-                </span>
-              )}
+      <h1 className="text-2xl font-bold">
+      
+        Admin Dashboard</h1>
+
+
+      {loading && <p>Loading...</p>}
+
+      {data && (
+        <>
+              {/* Quick Links Section */}
+      <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          Data Feeds
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          {/* Stops */}
+          <a
+            href="/stops-data-feed"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-purple-100 text-purple-600 rounded-xl group-hover:scale-110 transition">
+                <Map size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Stops Data
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Manage stop locations and details
+                </p>
+              </div>
             </div>
-          ))}
+          </a>
+
+          {/* Routes */}
+          <a
+            href="/routes-data-feed"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-blue-100 text-blue-600 rounded-xl group-hover:scale-110 transition">
+                <Database size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Routes Data
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Configure routes and paths
+                </p>
+              </div>
+            </div>
+          </a>
+
+
+          {/* Route Builder */}
+          <a
+            href="/route-builder"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-orange-100 text-orange-600 rounded-xl group-hover:scale-110 transition">
+                <Route size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Route Builder
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Design and visualize bus routes
+                </p>
+              </div>
+            </div>
+          </a>
+
+          {/* Buses */}
+          <a
+            href="/buses-data-feed"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-green-100 text-green-600 rounded-xl group-hover:scale-110 transition">
+                <Bus size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Buses Data
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Monitor and manage bus fleet
+                </p>
+              </div>
+            </div>
+          </a>
+
+          {/* Drivers */}
+          <a
+            href="/driver-data-feed"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-yellow-100 text-yellow-600 rounded-xl group-hover:scale-110 transition">
+                <User size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Drivers Data
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Manage driver information and schedules
+                </p>
+              </div>
+            </div>
+          </a>
+
+          <a
+            href="/schedule"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl group-hover:scale-110 transition">
+                <Clock size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Schedule Management
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  View and manage bus schedules
+                </p>
+              </div>
+            </div>
+          </a>
+
+          <a
+            href="/leave-approvals"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-purple-100 text-purple-600 rounded-xl group-hover:scale-110 transition">
+                <Calendar size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Leave Approvals
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Review and approve driver leave requests
+                </p>
+              </div>
+            </div>
+          </a>
+
+          <a
+            href="/dispatch"
+            className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-red-100 text-red-600 rounded-xl group-hover:scale-110 transition">
+                <AlertCircle size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Dispatch Center
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Manage and monitor dispatch operations
+                </p>
+              </div>
+            </div>
+          </a>
+
+          <a href="/override" className="group bg-[#E6F1FB] rounded-2xl p-6 shadow-sm hover:shadow-lg transition duration-300 border border-gray-100">
+            <div className="flex items-center gap-4">
+              {/* <div className="p-3 bg-teal-100 text-teal-600 rounded-xl group-hover:scale-110 transition">
+                <AlertTriangle size={24} />
+              </div> */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Override Requests
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Review and manage override requests
+                </p>
+              </div>
+            </div>
+          </a>
         </div>
-
-        {errors.length > 0 && (
-          <ul className="mt-4 text-red-600 text-sm list-disc list-inside">
-            {errors.map((err, idx) => (
-              <li key={idx}>{err}</li>
-            ))}
-          </ul>
-        )}
-
-        <button
-          onClick={handleUpload}
-          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          disabled={loading}
-        >
-          {loading ? "Uploading & Optimizing..." : "Validate & Upload"}
-        </button>
       </div>
+          {/* CARDS */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
-      {/* Schedule Viewer */}
-      {schedule.length > 0 && (
-        <div className="bg-white p-4 shadow rounded">
-          <h2 className="text-xl font-bold mb-3">Optimized Schedule Preview</h2>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-purple-100 text-left">
-                <th className="p-2 border">Bus ID</th>
-                <th className="p-2 border">Trip ID</th>
-                <th className="p-2 border">Route ID</th>
-                <th className="p-2 border">Planned Start</th>
-                <th className="p-2 border">Planned End</th>
-                <th className="p-2 border">Driver ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {schedule.map((row, idx) => (
-                <tr key={idx} className="hover:bg-purple-50">
-                  <td className="p-2 border">{row.bus_id}</td>
-                  <td className="p-2 border">{row.trip_id}</td>
-                  <td className="p-2 border">{row.route_id}</td>
-                  <td className="p-2 border">{row.planned_start}</td>
-                  <td className="p-2 border">{row.planned_end}</td>
-                  <td className="p-2 border">{row.assigned_driver_id}</td>
+            <div className="bg-[#E6F1FB] p-4 shadow rounded text-center">
+              <p className="text-gray-500">Total Trips Today</p>
+              <p className="text-2xl font-bold">
+                {data.total_trips_today}
+              </p>
+            </div>
+
+            <div className="bg-[#E6F1FB] p-4 shadow rounded text-center">
+              <p className="text-gray-500">Active Drivers</p>
+              <p className="text-2xl font-bold">
+                {data.active_drivers}
+              </p>
+            </div>
+
+            <div className="bg-[#E6F1FB] p-4 shadow rounded text-center">
+              <p className="text-gray-500">Active Buses</p>
+              <p className="text-2xl font-bold">
+                {data.active_buses}
+              </p>
+            </div>
+
+            <div className="bg-[#E6F1FB] p-4 shadow rounded text-center">
+              <p className="text-gray-500">Delayed Trips</p>
+              <p className="text-2xl font-bold text-red-600">
+                {data.delayed_trips}
+              </p>
+            </div>
+
+          </div>
+
+          {/* RECENT OVERRIDES */}
+          <div className="bg-[#E6F1FB] p-6 shadow rounded">
+            <h2 className="font-semibold mb-4">
+              Recent Overrides
+            </h2>
+
+            <table className="w-full border text-center">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th>Trip ID</th>
+                  <th>Old Driver</th>
+                  <th>New Driver</th>
+                  <th>Time</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody>
+                {data.recent_overrides &&
+                  data.recent_overrides.map((o) => (
+                    <tr key={o.id} className="border-t">
+                      <td>{o.trip_id}</td>
+                      <td>{o.old_driver || "-"}</td>
+                      <td>{o.new_driver || "-"}</td>
+                      <td>
+                        {new Date(o.created_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
-      {/* Calendar Section */}
-      {schedule.length > 0 && (
-        <div className="bg-white p-4 shadow rounded flex flex-col items-center">
-          <h2 className="text-xl font-bold mb-3">Check Schedule by Date</h2>
-          <Calendar
-            onChange={setSelectedDate}
-            value={selectedDate}
-            className="mb-4"
-          />
-          <p className="text-gray-600">
-            Showing schedule for:{" "}
-            <span className="font-semibold">{selectedDate.toDateString()}</span>
-          </p>
-        </div>
+      {message && (
+        <p className="text-red-600">{message}</p>
       )}
     </div>
   );
